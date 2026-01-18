@@ -508,9 +508,9 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
         if (has_dbg) break;
     }
     
-    /* If there are dbg statements, import a debug function */
+    /* If there are dbg statements, define a debug function (stub for WAT execution) */
     if (has_dbg) {
-        fprintf(output, "  (import \"env\" \"_casm_dbg_i32\" (func $__casm_dbg_i32 (param i32 i32)))\n");
+        fprintf(output, "  (func $__casm_dbg_i32 (param i32 i32))\n");
     }
     
     /* Emit function definitions */

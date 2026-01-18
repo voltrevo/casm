@@ -138,6 +138,16 @@ for test_dir in tests/dbg_cases/*/; do
         fi
     fi
     
+    # Step 7: Execute WAT and verify it doesn't crash
+    if command -v wasmtime &> /dev/null; then
+        if ! timeout ${DBG_TEST_TIMEOUT} wasmtime "$generated_wat" --invoke main > /dev/null 2>&1; then
+            echo "✗ (WAT execution failed)"
+            FAILED=$((FAILED + 1))
+            cd "$ORIG_DIR"
+            continue
+        fi
+    fi
+    
     # All checks passed
     echo "✓"
     PASSED=$((PASSED + 1))

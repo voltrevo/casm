@@ -1,5 +1,5 @@
 (module
-  (import "env" "_casm_dbg_i32" (func $__casm_dbg_i32 (param i32 i32)))
+  (func $__casm_dbg_i32 (param i32 i32))
   (func $main (result i32) (local $a i32) (local $b i32) (local $c i32)
     i32.const 5
     local.set $a
