@@ -277,38 +277,63 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
         
         case STMT_DBG: {
             ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
+            
+            print_indent(out, indent);
+            fprintf(out, "printf(\"");
+            
+            /* Build the format string with all arguments */
             for (int i = 0; i < dbg->argument_count; i++) {
-                print_indent(out, indent);
-                fprintf(out, "_casm_dbg_");
+                if (i > 0) fprintf(out, " ");  /* Space between multiple args */
                 
-                /* Use the type of the expression to determine the format specifier */
-                CasmType arg_type = dbg->arguments[i].resolved_type;
-                switch (arg_type) {
-                    case TYPE_I8:
-                    case TYPE_I16:
-                    case TYPE_I32: fprintf(out, "i32(\""); break;
-                    case TYPE_I64: fprintf(out, "i64(\""); break;
-                    case TYPE_U8:
-                    case TYPE_U16:
-                    case TYPE_U32: fprintf(out, "u32(\""); break;
-                    case TYPE_U64: fprintf(out, "u64(\""); break;
-                    case TYPE_BOOL: fprintf(out, "bool(\""); break;
-                    default: fprintf(out, "i32(\""); break;
-                }
-                
-                /* Emit location info: file:line:col: argname = */
                 fprintf(out, "%s:%d:%d: ", g_source_filename, dbg->location.line, dbg->location.column);
                 if (dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0) {
                     fprintf(out, "%s = ", dbg->arg_names[i]);
                 } else {
-                    /* Fallback: just use generic label */
                     fprintf(out, "arg%d = ", i);
                 }
-                fprintf(out, "\", ");
                 
-                emit_expression(out, &dbg->arguments[i]);
-                fprintf(out, ");\n");
+                /* Add format specifier based on type */
+                CasmType arg_type = dbg->arguments[i].resolved_type;
+                switch (arg_type) {
+                    case TYPE_I8:
+                    case TYPE_I16:
+                    case TYPE_I32: fprintf(out, "%%d"); break;
+                    case TYPE_I64: fprintf(out, "%%lld"); break;
+                    case TYPE_U8:
+                    case TYPE_U16:
+                    case TYPE_U32: fprintf(out, "%%u"); break;
+                    case TYPE_U64: fprintf(out, "%%llu"); break;
+                    case TYPE_BOOL: fprintf(out, "%%s"); break;
+                    default: fprintf(out, "%%d"); break;
+                }
             }
+            fprintf(out, "\\n\"");
+            
+            /* Add arguments to printf */
+            for (int i = 0; i < dbg->argument_count; i++) {
+                fprintf(out, ", ");
+                CasmType arg_type = dbg->arguments[i].resolved_type;
+                
+                /* For bool, we need to wrap the expression to convert to "true"/"false" */
+                if (arg_type == TYPE_BOOL) {
+                    fprintf(out, "(");
+                    emit_expression(out, &dbg->arguments[i]);
+                    fprintf(out, ") ? \"true\" : \"false\"");
+                } else if (arg_type == TYPE_I64 || arg_type == TYPE_U64) {
+                    /* Cast to long long for 64-bit values */
+                    fprintf(out, "(long long)(");
+                    emit_expression(out, &dbg->arguments[i]);
+                    fprintf(out, ")");
+                } else if (arg_type == TYPE_U32 || arg_type == TYPE_U8 || arg_type == TYPE_U16) {
+                    /* Cast to unsigned for unsigned values */
+                    fprintf(out, "(unsigned int)(");
+                    emit_expression(out, &dbg->arguments[i]);
+                    fprintf(out, ")");
+                } else {
+                    emit_expression(out, &dbg->arguments[i]);
+                }
+            }
+            fprintf(out, ");\n");
             break;
         }
     }
@@ -385,25 +410,6 @@ CodegenResult codegen_program(ASTProgram* program, FILE* output, const char* sou
     fprintf(output, "#include <stdint.h>\n");
     fprintf(output, "#include <stdbool.h>\n");
     fprintf(output, "#include <stdio.h>\n");
-    fprintf(output, "\n");
-    
-    /* Emit debug helper functions */
-    fprintf(output, "/* Debug helper functions */\n");
-    fprintf(output, "static void __attribute__((unused)) _casm_dbg_i32(const char* label, int32_t value) {\n");
-    fprintf(output, "    printf(\"%%s%%d\\n\", label, value);\n");
-    fprintf(output, "}\n");
-    fprintf(output, "static void __attribute__((unused)) _casm_dbg_i64(const char* label, int64_t value) {\n");
-    fprintf(output, "    printf(\"%%s%%lld\\n\", label, (long long)value);\n");
-    fprintf(output, "}\n");
-    fprintf(output, "static void __attribute__((unused)) _casm_dbg_u32(const char* label, uint32_t value) {\n");
-    fprintf(output, "    printf(\"%%s%%u\\n\", label, value);\n");
-    fprintf(output, "}\n");
-    fprintf(output, "static void __attribute__((unused)) _casm_dbg_u64(const char* label, uint64_t value) {\n");
-    fprintf(output, "    printf(\"%%s%%llu\\n\", label, (unsigned long long)value);\n");
-    fprintf(output, "}\n");
-    fprintf(output, "static void __attribute__((unused)) _casm_dbg_bool(const char* label, _Bool value) {\n");
-    fprintf(output, "    printf(\"%%s%%s\\n\", label, value ? \"true\" : \"false\");\n");
-    fprintf(output, "}\n");
     fprintf(output, "\n");
     
     /* Emit function declarations */

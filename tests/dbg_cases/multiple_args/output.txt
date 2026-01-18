@@ -1,2 +1,1 @@
-tests/dbg_cases/multiple_args/test.csm:5:4: x = 10
-tests/dbg_cases/multiple_args/test.csm:5:4: y = 20
+tests/dbg_cases/multiple_args/test.csm:5:4: x = 10 tests/dbg_cases/multiple_args/test.csm:5:4: y = 20
