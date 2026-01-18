@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
     
     if (parser->errors->error_count > 0) {
         error_list_print(parser->errors, argv[1]);
+        ast_program_free(program);
         parser_free(parser);
         xfree(source);
         return 1;
