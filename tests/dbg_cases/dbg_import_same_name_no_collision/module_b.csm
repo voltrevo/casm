@@ -1,0 +1,9 @@
+// Module B - also defines helper and process_b that uses it
+// Same function name 'helper' but different implementation
+i32 helper(i32 x) {
+    return x * 5;
+}
+
+i32 process_b(i32 n) {
+    return helper(n);
+}

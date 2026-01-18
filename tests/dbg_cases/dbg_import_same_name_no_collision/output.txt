@@ -1,1 +1,1 @@
-test.csm:9:4: result = 11
+test.csm:3:4: Function 'helper' already defined

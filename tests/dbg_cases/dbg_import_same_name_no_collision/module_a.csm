@@ -1,0 +1,8 @@
+// Module A - defines helper and process_a that uses it
+i32 helper(i32 x) {
+    return x + 10;
+}
+
+i32 process_a(i32 n) {
+    return helper(n);
+}

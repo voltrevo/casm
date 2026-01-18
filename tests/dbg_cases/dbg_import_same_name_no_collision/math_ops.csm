@@ -1,5 +1,0 @@
-// Module B - math operations
-// Also has a public function named 'process' (different implementation)
-i32 process(i32 n) {
-    return (n + 100) * 3;
-}

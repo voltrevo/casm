@@ -1,11 +1,15 @@
-// Test - both modules have a function named 'process'
-// But we only import one of them, so there's no collision
-// This is different from dbg_import_error_collision where we import the SAME name from BOTH
+// Test case: import public functions from two modules
+// Both modules have internal 'helper' functions with same name but different implementations
+// When compiled into a single program, both should exist as distinct symbols
+// This requires proper name mangling/namespacing (e.g., module_a_helper vs module_b_helper)
 
-#import process from "./string_ops.csm";
+#import process_a from "./module_a.csm";
+#import process_b from "./module_b.csm";
 
 i32 main() {
-    i32 result = process(5);
-    dbg(result);
+    i32 result_a = process_a(3);
+    i32 result_b = process_b(3);
+    dbg(result_a);
+    dbg(result_b);
     return 0;
 }

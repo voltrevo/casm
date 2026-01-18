@@ -1,5 +1,0 @@
-// Module A - string operations
-// Public function named 'process'
-i32 process(i32 s) {
-    return s * 2 + 1;
-}
