@@ -1,69 +1,24 @@
 # Documentation
 
-## Files
-
-- **STATUS.md** - Current project status, what's done, what's next
-- **PLAN.md** - Original compiler design and architecture document
-- **SYMBOL_TABLE.md** - Symbol table & type system (COMPLETE)
-- **QUICK_REF.md** - Common commands and lookup info
+Quick overview of the Casm compiler project.
 
 ## Start Here
 
-New to project? Read STATUS.md first (2 min) for quick overview.
+- **New to the project?** Read [STATUS.md](STATUS.md) for a 3-minute overview (current state, completed features, next steps)
+- **Need to build/test?** See [QUICK_REF.md](QUICK_REF.md) for commands and code organization
+- **Need a reminder?** Check [QUICK_REF.md](QUICK_REF.md#features-status) for feature status table
 
-Already familiar? Check QUICK_REF.md for commands.
+## Current State
 
-Want implementation details? See SYMBOL_TABLE.md.
+- **Status:** 128 tests passing (106 lexer + 15 semantics + 7 examples)
+- **Code:** 3,489 lines of C
+- **Quality:** Zero warnings, zero leaks, ASAN/UBSAN enabled
+- **Next:** WAT code generator
 
-## Key Info
+## Key Facts
 
-- **Current:** Symbol table & type system complete
-- **Status:** 3,382 LOC, 125 tests passing, zero memory leaks
-- **Quality:** Zero warnings, zero leaks, <600ms tests, ASAN/UBSAN enabled
-- **Next:** C and WAT code generators
-
-## Test Coverage
-
-| Component | Tests | Status |
-|-----------|-------|--------|
-| Lexer | 106 | ✓ Complete |
-| Parser | implicit | ✓ Complete |
-| Semantics | 15 | ✓ Complete |
-| Examples | 4 | ✓ All passing |
-| **Total** | **125** | **✓ All passing** |
-
-## Architecture
-
-```
-Source Code (.csm)
-    ↓
-Lexer (tokenization)
-    ↓
-Parser (syntax analysis)
-    ↓
-AST (abstract syntax tree)
-    ↓
-Semantic Analyzer (type checking)
-    ↓
-Type-Annotated AST
-    ↓
-Code Generators (C / WAT) [TODO]
-    ↓
-Output
-```
-
-## Quick Start
-
-```bash
-# Build
-make build
-
-# Run tests
-make test
-
-# Try an example
-./bin/casm examples/simple_add.csm
-
-# Check for issues
-make clean && make test 2>&1 | grep -iE "(warning|leak|error)"
-```
+- Compiles `.csm` files (C-like language) to C and WAT
+- 10 explicit types: i8-i64, u8-u64, bool, void
+- Full type checking and error accumulation
+- Complete symbol table with block scoping
+- C code generator working, WAT pending

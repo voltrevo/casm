@@ -1,69 +1,117 @@
-# Project Status
+# Casm Compiler - Current Status
 
-## Current State
-- **Lexer:** Complete (106 tests)
-- **Parser:** Complete (functions, variables, expressions, control flow)
-- **Error handling:** Complete (accumulated errors, file:line:col format)
-- **Symbol table & type system:** Complete (2-pass semantic analysis)
-- **Semantic analysis:** Complete (type checking, error accumulation)
-- **Control flow:** Complete (if/else-if/else, while, for loops)
-- **C code generator:** Complete (generates valid C code)
-- **Memory:** Safe (zero leaks, sanitizers enabled)
-- **Tests:** All passing (~500ms) - 106 lexer + 15 semantics + 7 examples
+## Project Overview
 
-## Completed
-1. Lexer with source location tracking
-2. Recursive descent parser with AST
-3. Error accumulation + reporting
-4. Symbol table with scoping
-5. 2-pass semantic analyzer with type checking
-6. Control flow statements (if/while/for) with block bodies
-7. Assignment operator with proper code generation
-8. C code generator (codegen.c/h)
-9. Memory management - zero leaks
-10. AddressSanitizer + UBSanitizer enabled
+A C-like to WebAssembly compiler written in C. Compiles `.csm` files to C and WAT output.
+
+**Language Features:**
+- Explicit type system: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `bool`, `void`
+- Functions with parameters and return types
+- Variables with explicit type declarations
+- Control flow: `if`/`else`, `while`, `for`
+- Binary and unary operators with full type checking
+- Block-scoped variables with proper scoping rules
+
+## Current Implementation Status
+
+| Component | Status | Tests | Details |
+|-----------|--------|-------|---------|
+| **Lexer** | ✅ Complete | 106 | Tokenization, source location tracking |
+| **Parser** | ✅ Complete | implicit | 2-pass recursive descent, AST generation |
+| **Semantic Analysis** | ✅ Complete | 15 | Type checking, symbol table, error accumulation |
+| **C Code Generator** | ✅ Complete | 7 examples | Generates valid C code |
+| **WAT Code Generator** | ❌ Not started | — | Next phase |
+| **Memory Safety** | ✅ Complete | — | Zero leaks, ASAN/UBSAN enabled |
+
+**Total Tests:** 106 lexer + 15 semantics + 7 examples = **128 tests passing**
+
+**Code:** 3,489 lines of C (src/ + tests/)
+
+**Test Runtime:** ~500ms total
+
+## Completed Features
+
+1. ✅ Full lexer with line/column tracking
+2. ✅ Recursive descent parser with 2-pass approach
+3. ✅ Error accumulation and proper error reporting
+4. ✅ Symbol table with scoping (global + nested blocks)
+5. ✅ Type system with 10 types
+6. ✅ 2-pass semantic analysis (signatures + body validation)
+7. ✅ Type checking for all operations
+8. ✅ Uninitialized variable detection
+9. ✅ Integer overflow detection
+10. ✅ Strict type compatibility rules
+11. ✅ C code generation (fully functional)
+12. ✅ Control flow statements (`if`/`else`, `while`, `for`)
+13. ✅ Memory safety (zero leaks)
+
+## Known Limitations
+
+1. **Type Narrowing**: i64 literals can implicitly narrow to smaller integer types due to default literal typing
+2. **No Explicit Casts**: Language lacks explicit cast operator for intentional narrowing
+3. **Single-file Compilation**: No module imports or separate compilation units yet
+4. **No Advanced Features**: No structs, arrays, pointers, strings, floats, or bitwise ops
 
 ## Next Steps
-1. **WAT code generator** (codegen_wat.c/h) - Generate WebAssembly text format
 
-## File Counts
-| File | Lines |
-|------|-------|
-| src/lexer.c | 350 |
-| src/parser.c | 1,000+ |
-| src/ast.c | 230 |
-| src/types.c | 230 |
-| src/semantics.c | 380 |
-| src/codegen.c | 280 |
-| src/main.c | 150 |
-| src/utils.c | 50 |
-| tests/test_lexer.c | 315 |
-| tests/test_semantics.c | 408 |
-| **Total** | **~3,800** |
+### Phase 1: WAT Code Generator
+- Implement `src/codegen_wat.c/h`
+- Generate WebAssembly text format output
+- Map Casm types to WAT types
+- Test with existing example programs
 
-## Build & Test
+### Phase 2: Enhanced Error Recovery
+- Better error messages with context
+- Suggestion system for common mistakes
+- Recovery strategies for parser
+
+### Phase 3: Standard Library
+- Built-in functions (print, math, etc.)
+- Module system for code reuse
+
+## File Organization
+
+**Source Code:**
+- `src/lexer.c/h` — Tokenization (350 lines)
+- `src/parser.c/h` — Syntax analysis & AST (1000+ lines)
+- `src/semantics.c/h` — Type checking & symbol table (600+ lines)
+- `src/codegen.c/h` — C code generation (280 lines)
+- `src/ast.c/h` — AST data structures (230 lines)
+- `src/types.c/h` — Type system (230 lines)
+- `src/utils.c/h` — Utilities
+- `src/main.c` — CLI entry point (150 lines)
+
+**Tests:**
+- `tests/test_lexer.c` — 106 unit tests
+- `tests/test_semantics.c` — 15 semantic tests
+
+**Examples:** 13 example programs in `examples/` (7 tested, 6 issue-specific)
+
+## Build & Test Commands
+
 ```bash
 make build              # Debug with sanitizers
-make test               # All tests (7 example programs)
-make build-release      # Optimized
+make test               # Run all tests
 make clean              # Remove binaries
 ```
 
 ## Example Programs
-All of these generate valid C code and compile correctly:
-- simple_add.csm - Basic arithmetic
-- variables.csm - Variable declarations
-- function_call.csm - Functions with parameters
-- mixed_types.csm - Multiple numeric types
-- if_statement.csm - If/else conditionals
-- while_loop.csm - While loops with assignments
-- for_loop.csm - C-style for loops
+
+All examples compile to valid C and run successfully:
+- `simple_add.csm` — Basic arithmetic
+- `variables.csm` — Variable declarations
+- `function_call.csm` — Functions with parameters
+- `mixed_types.csm` — Multiple integer types
+- `if_statement.csm` — Conditional logic
+- `while_loop.csm` — Loop control
+- `for_loop.csm` — Loop variants
+
+(Plus 6 examples for specific issue testing)
 
 ## Design Principles
-- Explicit types (no type inference)
-- Block-scoped variables
-- Accumulate all errors before reporting
-- Require block bodies for control flow (no single statements)
-- Block-based error recovery
-- Zero memory leaks, even on error paths
 
+- **Explicit types everywhere** — No type inference
+- **Block scoping** — Variables scoped to their block
+- **Accumulate errors** — Report all errors before exiting
+- **Safe memory** — Manual malloc/free with zero leaks
+- **Error recovery** — Graceful handling of invalid input
