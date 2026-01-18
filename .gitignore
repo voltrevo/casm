@@ -6,6 +6,9 @@ test_casm
 # Output files
 out.c
 out.wat
+# But include expected output files for tests
+!tests/dbg_cases/*/out.c
+!tests/dbg_cases/*/out.wat
 
 # Object files
 *.o
