@@ -33,9 +33,14 @@ build-debug: $(SOURCES)
 build-release: $(SOURCES)
 	$(CC) $(CFLAGS_RELEASE) -o $(MAIN_BINARY) $^ $(LDFLAGS)
 
-test: 
-	$(CC) $(CFLAGS_DEBUG) -o $(TEST_BINARY) $(TEST_SOURCES) $(LDFLAGS)
+test: build-debug $(TEST_BINARY)
+	./run_tests.sh
+
+unit-test: $(TEST_BINARY)
 	./$(TEST_BINARY)
+
+$(TEST_BINARY): $(TEST_SOURCES)
+	$(CC) $(CFLAGS_DEBUG) -o $(TEST_BINARY) $(TEST_SOURCES) $(LDFLAGS)
 
 clean:
 	rm -f $(MAIN_BINARY) $(TEST_BINARY)
