@@ -463,11 +463,10 @@ static ASTExpression* parse_assignment(Parser* parser) {
         }
         
         /* Convert to a binary operation (assignment) */
-        /* For now we'll use a function call as a workaround - we'll handle this differently later */
         ASTExpression* new_expr = ast_expression_create(EXPR_BINARY_OP, location);
         new_expr->as.binary_op.left = expr;
         new_expr->as.binary_op.right = value;
-        new_expr->as.binary_op.op = BINOP_ADD;  /* Placeholder - we'll fix this later */
+        new_expr->as.binary_op.op = BINOP_ASSIGN;
         
         return new_expr;
     }
@@ -478,6 +477,257 @@ static ASTExpression* parse_assignment(Parser* parser) {
 /* Top-level expression parsing */
 static ASTExpression* parse_expression(Parser* parser) {
     return parse_assignment(parser);
+}
+
+/* Parse a block: { statements } - returns heap-allocated ASTBlock */
+static ASTBlock* parse_block_stmt(Parser* parser) {
+    ASTBlock* block = ast_block_create();
+    block->location = current_token(parser).location;
+    
+    if (!match(parser, TOK_LBRACE)) {
+        parser_error(parser, "Expected '{' at start of block");
+        return block;
+    }
+    
+    /* Parse statements until we hit } or EOF */
+    while (!check(parser, TOK_RBRACE) && !check(parser, TOK_EOF)) {
+        ASTStatement* stmt = parse_statement(parser);
+        if (stmt) {
+            ast_block_add_statement(block, *stmt);
+            xfree(stmt);  /* Free the heap-allocated statement since we copied it */
+        }
+    }
+    
+    if (!match(parser, TOK_RBRACE)) {
+        parser_error(parser, "Expected '}' at end of block");
+    }
+    
+    return block;
+}
+
+/* Parse an if statement with optional else-if chain and optional else */
+static ASTStatement* parse_if_statement(Parser* parser) {
+    SourceLocation location = current_token(parser).location;
+    advance(parser);  /* consume 'if' */
+    
+    if (!match(parser, TOK_LPAREN)) {
+        parser_error(parser, "Expected '(' after 'if'");
+        return NULL;
+    }
+    
+    ASTExpression* condition = parse_expression(parser);
+    if (!condition) {
+        parser_error(parser, "Expected expression in if condition");
+        return NULL;
+    }
+    
+    if (!match(parser, TOK_RPAREN)) {
+        parser_error(parser, "Expected ')' after if condition");
+        return NULL;
+    }
+    
+    /* Require block body */
+    if (!check(parser, TOK_LBRACE)) {
+        parser_error(parser, "If statement body must be a block (use {...})");
+        ast_expression_free(condition);
+        return NULL;
+    }
+    
+    ASTBlock* then_body = parse_block_stmt(parser);
+    
+    /* Parse optional else-if chain and final else block */
+    ASTElseIfClause* else_if_chain = NULL;
+    ASTElseIfClause** else_if_tail = &else_if_chain;
+    ASTBlock* else_body = NULL;
+    
+    while (check(parser, TOK_ELSE)) {
+        advance(parser);  /* consume 'else' */
+        
+        /* Check for else-if */
+        if (check(parser, TOK_IF)) {
+            advance(parser);  /* consume 'if' */
+            
+            if (!match(parser, TOK_LPAREN)) {
+                parser_error(parser, "Expected '(' after 'else if'");
+                return NULL;
+            }
+            
+            ASTExpression* elif_cond = parse_expression(parser);
+            if (!elif_cond) {
+                parser_error(parser, "Expected expression in else-if condition");
+                return NULL;
+            }
+            
+            if (!match(parser, TOK_RPAREN)) {
+                parser_error(parser, "Expected ')' after else-if condition");
+                ast_expression_free(elif_cond);
+                return NULL;
+            }
+            
+            if (!check(parser, TOK_LBRACE)) {
+                parser_error(parser, "Else-if statement body must be a block (use {...})");
+                ast_expression_free(elif_cond);
+                return NULL;
+            }
+            
+            ASTBlock elif_body = *parse_block_stmt(parser);
+            
+            ASTElseIfClause* elif_clause = ast_else_if_create(elif_cond, elif_body, location);
+            *else_if_tail = elif_clause;
+            else_if_tail = &elif_clause->next;
+            /* Continue loop to check for more else-if or final else */
+        } else {
+            /* This is the final else block (no condition) */
+            if (!check(parser, TOK_LBRACE)) {
+                parser_error(parser, "Else statement body must be a block (use {...})");
+                return NULL;
+            }
+            
+            else_body = parse_block_stmt(parser);
+            /* Break out of loop - final else consumes no more clauses */
+            break;
+        }
+    }
+    
+    ASTStatement* stmt = ast_statement_create(STMT_IF, location);
+    stmt->as.if_stmt.condition = condition;
+    stmt->as.if_stmt.then_body = *then_body;
+    xfree(then_body);
+    stmt->as.if_stmt.else_if_chain = else_if_chain;
+    stmt->as.if_stmt.else_body = else_body;
+    
+    return stmt;
+}
+
+/* Parse a while statement */
+static ASTStatement* parse_while_statement(Parser* parser) {
+    SourceLocation location = current_token(parser).location;
+    advance(parser);  /* consume 'while' */
+    
+    if (!match(parser, TOK_LPAREN)) {
+        parser_error(parser, "Expected '(' after 'while'");
+        return NULL;
+    }
+    
+    ASTExpression* condition = parse_expression(parser);
+    if (!condition) {
+        parser_error(parser, "Expected expression in while condition");
+        return NULL;
+    }
+    
+    if (!match(parser, TOK_RPAREN)) {
+        parser_error(parser, "Expected ')' after while condition");
+        return NULL;
+    }
+    
+    /* Require block body */
+    if (!check(parser, TOK_LBRACE)) {
+        parser_error(parser, "While statement body must be a block (use {...})");
+        ast_expression_free(condition);
+        return NULL;
+    }
+    
+    ASTBlock* body = parse_block_stmt(parser);
+    
+    ASTStatement* stmt = ast_statement_create(STMT_WHILE, location);
+    stmt->as.while_stmt.condition = condition;
+    stmt->as.while_stmt.body = *body;
+    xfree(body);
+    
+    return stmt;
+}
+
+/* Parse a for statement: for(init; condition; update) { body } */
+static ASTStatement* parse_for_statement(Parser* parser) {
+    SourceLocation location = current_token(parser).location;
+    advance(parser);  /* consume 'for' */
+    
+    if (!match(parser, TOK_LPAREN)) {
+        parser_error(parser, "Expected '(' after 'for'");
+        return NULL;
+    }
+    
+    /* Parse optional init (can be variable declaration or expression) */
+    ASTStatement* init = NULL;
+    if (!check(parser, TOK_SEMICOLON)) {
+        /* Check if it's a variable declaration */
+        Token token = current_token(parser);
+        if (token.type == TOK_I8 || token.type == TOK_I16 || token.type == TOK_I32 ||
+            token.type == TOK_I64 || token.type == TOK_U8 || token.type == TOK_U16 ||
+            token.type == TOK_U32 || token.type == TOK_U64 || token.type == TOK_BOOL) {
+            
+            /* Variable declaration in for init */
+            init = parse_statement(parser);
+            /* Don't consume semicolon here - parse_statement for var decl already did */
+        } else {
+            /* Expression statement */
+            ASTExpression* expr = parse_expression(parser);
+            if (!expr) {
+                parser_error(parser, "Expected expression in for init");
+                return NULL;
+            }
+            
+            init = ast_statement_create(STMT_EXPR, location);
+            init->as.expr_stmt.expr = expr;
+            
+            if (!match(parser, TOK_SEMICOLON)) {
+                parser_error(parser, "Expected ';' after for init");
+                return NULL;
+            }
+        }
+    } else {
+        advance(parser);  /* consume the semicolon */
+    }
+    
+    /* Parse optional condition */
+    ASTExpression* condition = NULL;
+    if (!check(parser, TOK_SEMICOLON)) {
+        condition = parse_expression(parser);
+        if (!condition) {
+            parser_error(parser, "Expected expression in for condition");
+            return NULL;
+        }
+    }
+    
+    if (!match(parser, TOK_SEMICOLON)) {
+        parser_error(parser, "Expected ';' after for condition");
+        return NULL;
+    }
+    
+    /* Parse optional update */
+    ASTExpression* update = NULL;
+    if (!check(parser, TOK_RPAREN)) {
+        update = parse_expression(parser);
+        if (!update) {
+            parser_error(parser, "Expected expression in for update");
+            return NULL;
+        }
+    }
+    
+    if (!match(parser, TOK_RPAREN)) {
+        parser_error(parser, "Expected ')' after for clauses");
+        return NULL;
+    }
+    
+    /* Require block body */
+    if (!check(parser, TOK_LBRACE)) {
+        parser_error(parser, "For statement body must be a block (use {...})");
+        if (init) ast_statement_free(init);
+        if (condition) ast_expression_free(condition);
+        if (update) ast_expression_free(update);
+        return NULL;
+    }
+    
+    ASTBlock* body = parse_block_stmt(parser);
+    
+    ASTStatement* stmt = ast_statement_create(STMT_FOR, location);
+    stmt->as.for_stmt.init = init;
+    stmt->as.for_stmt.condition = condition;
+    stmt->as.for_stmt.update = update;
+    stmt->as.for_stmt.body = *body;
+    xfree(body);
+    
+    return stmt;
 }
 
 /* Parse a statement - caller must free returned statement */
@@ -505,33 +755,17 @@ static ASTStatement* parse_statement(Parser* parser) {
         return stmt;
     }
     
-    /* Unsupported control flow - report error and skip it */
-    if (token.type == TOK_IF || token.type == TOK_WHILE || token.type == TOK_FOR) {
-        const char* keyword = (token.type == TOK_IF) ? "if" : 
-                              (token.type == TOK_WHILE) ? "while" : "for";
-        char msg[100];
-        snprintf(msg, sizeof(msg), "Control flow '%s' not yet implemented", keyword);
-        parser_error(parser, msg);
-        
-        /* MUST advance to avoid infinite loop in block parser */
-        advance(parser);
-        
-        /* Skip to closing brace or semicolon - simple recovery */
-        int depth = 0;
-        while (!check(parser, TOK_EOF)) {
-            if (check(parser, TOK_LBRACE)) {
-                depth++;
-            } else if (check(parser, TOK_RBRACE)) {
-                if (depth == 0) {
-                    /* Don't consume the closing brace - it belongs to parent block */
-                    break;
-                }
-                depth--;
-            }
-            advance(parser);
-        }
-        
-        return NULL;  /* Return NULL to skip this statement */
+    /* Control flow statements */
+    if (token.type == TOK_IF) {
+        return parse_if_statement(parser);
+    }
+    
+    if (token.type == TOK_WHILE) {
+        return parse_while_statement(parser);
+    }
+    
+    if (token.type == TOK_FOR) {
+        return parse_for_statement(parser);
     }
     
     /* Variable declaration */

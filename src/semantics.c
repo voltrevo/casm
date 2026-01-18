@@ -46,6 +46,7 @@ void semantic_error_list_print(SemanticErrorList* list, const char* filename) {
 /* Forward declarations */
 static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, SemanticErrorList* errors);
 static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType return_type, SemanticErrorList* errors);
+static void analyze_block(ASTBlock* block, SymbolTable* table, CasmType return_type, SemanticErrorList* errors);
 
 /* Analyze an expression and return its type */
 static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, SemanticErrorList* errors) {
@@ -115,6 +116,17 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
                 if (right_type != TYPE_BOOL) {
                     semantic_error_list_add(errors, "Logical AND/OR require boolean operands", expr->location);
                 }
+            } else if (op == BINOP_ASSIGN) {
+                /* Assignment - left must be variable, types must match */
+                if (expr->as.binary_op.left->type != EXPR_VARIABLE) {
+                    semantic_error_list_add(errors, "Can only assign to variables", expr->location);
+                }
+                if (!types_compatible(left_type, right_type)) {
+                    semantic_error_list_add(errors, "Assignment type mismatch", expr->location);
+                }
+                /* Assignment expression has the type of the right-hand side */
+                expr->resolved_type = right_type;
+                return right_type;
             }
             
             expr->resolved_type = get_binary_op_result_type(left_type, op, right_type);
@@ -222,6 +234,80 @@ static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType r
         
         case STMT_EXPR: {
             analyze_expression(stmt->as.expr_stmt.expr, table, errors);
+            break;
+        }
+        
+        case STMT_IF: {
+            ASTIfStmt* if_stmt = &stmt->as.if_stmt;
+            
+            /* Analyze condition - must be bool type */
+            CasmType cond_type = analyze_expression(if_stmt->condition, table, errors);
+            if (cond_type != TYPE_BOOL) {
+                semantic_error_list_add(errors, "If condition must have bool type", stmt->location);
+            }
+            
+            /* Analyze then block */
+            analyze_block(&if_stmt->then_body, table, return_type, errors);
+            
+            /* Analyze else-if chain */
+            for (ASTElseIfClause* elif = if_stmt->else_if_chain; elif; elif = elif->next) {
+                CasmType elif_type = analyze_expression(elif->condition, table, errors);
+                if (elif_type != TYPE_BOOL) {
+                    semantic_error_list_add(errors, "Else-if condition must have bool type", elif->condition->location);
+                }
+                analyze_block(&elif->body, table, return_type, errors);
+            }
+            
+            /* Analyze else block if present */
+            if (if_stmt->else_body) {
+                analyze_block(if_stmt->else_body, table, return_type, errors);
+            }
+            break;
+        }
+        
+        case STMT_WHILE: {
+            ASTWhileStmt* while_stmt = &stmt->as.while_stmt;
+            
+            /* Analyze condition - must be bool type */
+            CasmType cond_type = analyze_expression(while_stmt->condition, table, errors);
+            if (cond_type != TYPE_BOOL) {
+                semantic_error_list_add(errors, "While condition must have bool type", stmt->location);
+            }
+            
+            /* Analyze body block */
+            analyze_block(&while_stmt->body, table, return_type, errors);
+            break;
+        }
+        
+        case STMT_FOR: {
+            ASTForStmt* for_stmt = &stmt->as.for_stmt;
+            
+            /* Create new scope for loop variable */
+            symbol_table_push_scope(table);
+            
+            /* Analyze init statement if present */
+            if (for_stmt->init) {
+                analyze_statement(for_stmt->init, table, return_type, errors);
+            }
+            
+            /* Analyze condition - must be bool type if present */
+            if (for_stmt->condition) {
+                CasmType cond_type = analyze_expression(for_stmt->condition, table, errors);
+                if (cond_type != TYPE_BOOL) {
+                    semantic_error_list_add(errors, "For loop condition must have bool type", for_stmt->condition->location);
+                }
+            }
+            
+            /* Analyze update expression if present */
+            if (for_stmt->update) {
+                analyze_expression(for_stmt->update, table, errors);
+            }
+            
+            /* Analyze body block */
+            analyze_block(&for_stmt->body, table, return_type, errors);
+            
+            /* Pop scope */
+            symbol_table_pop_scope(table);
             break;
         }
     }

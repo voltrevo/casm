@@ -217,6 +217,10 @@ CasmType get_binary_op_result_type(CasmType left, BinaryOpType op, CasmType righ
         case BINOP_OR:
             /* Logical ops return bool */
             return TYPE_BOOL;
+        
+        case BINOP_ASSIGN:
+            /* Assignment returns the type of the right operand (should be handled in semantics) */
+            return right;
     }
     
     return TYPE_VOID;  /* Should not reach */

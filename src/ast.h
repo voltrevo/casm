@@ -16,6 +16,10 @@ typedef struct ASTExpression ASTExpression;
 typedef struct ASTReturnStmt ASTReturnStmt;
 typedef struct ASTExprStmt ASTExprStmt;
 typedef struct ASTVarDeclStmt ASTVarDeclStmt;
+typedef struct ASTIfStmt ASTIfStmt;
+typedef struct ASTWhileStmt ASTWhileStmt;
+typedef struct ASTForStmt ASTForStmt;
+typedef struct ASTElseIfClause ASTElseIfClause;
 typedef struct ASTBinaryOp ASTBinaryOp;
 typedef struct ASTUnaryOp ASTUnaryOp;
 typedef struct ASTFunctionCall ASTFunctionCall;
@@ -64,6 +68,9 @@ typedef enum {
     STMT_RETURN,
     STMT_EXPR,
     STMT_VAR_DECL,
+    STMT_IF,
+    STMT_WHILE,
+    STMT_FOR,
 } StatementType;
 
 struct ASTReturnStmt {
@@ -80,6 +87,45 @@ struct ASTVarDeclStmt {
     ASTVarDecl var_decl;
 };
 
+/* Block (sequence of statements) - forward declared to allow usage in control flow */
+struct ASTBlock {
+    ASTStatement* statements;
+    int statement_count;
+    SourceLocation location;
+};
+
+/* Else-if clause (linked list of conditions) */
+struct ASTElseIfClause {
+    ASTExpression* condition;
+    ASTBlock body;
+    struct ASTElseIfClause* next;  /* NULL if no more else-if */
+};
+
+/* If statement with optional else-if chain and optional else */
+struct ASTIfStmt {
+    ASTExpression* condition;
+    ASTBlock then_body;
+    ASTElseIfClause* else_if_chain;  /* NULL if no else-if */
+    ASTBlock* else_body;  /* NULL if no else block */
+    SourceLocation location;
+};
+
+/* While statement */
+struct ASTWhileStmt {
+    ASTExpression* condition;
+    ASTBlock body;
+    SourceLocation location;
+};
+
+/* For statement: for(init; condition; update) { body } */
+struct ASTForStmt {
+    ASTStatement* init;  /* NULL if no init (e.g., for(; cond; update)) */
+    ASTExpression* condition;
+    ASTExpression* update;  /* NULL if no update (e.g., for(;;)) */
+    ASTBlock body;
+    SourceLocation location;
+};
+
 struct ASTStatement {
     StatementType type;
     SourceLocation location;
@@ -87,14 +133,10 @@ struct ASTStatement {
         ASTReturnStmt return_stmt;
         ASTExprStmt expr_stmt;
         ASTVarDeclStmt var_decl_stmt;
+        ASTIfStmt if_stmt;
+        ASTWhileStmt while_stmt;
+        ASTForStmt for_stmt;
     } as;
-};
-
-/* Block (sequence of statements) */
-struct ASTBlock {
-    ASTStatement* statements;
-    int statement_count;
-    SourceLocation location;
 };
 
 /* Expressions */
@@ -120,6 +162,7 @@ typedef enum {
     BINOP_GE,        /* >= */
     BINOP_AND,       /* && */
     BINOP_OR,        /* || */
+    BINOP_ASSIGN,    /* = (assignment) */
 } BinaryOpType;
 
 typedef enum {
@@ -214,5 +257,9 @@ void ast_expression_free(ASTExpression* expr);
 
 ASTParameter* ast_parameter_create(const char* name, TypeNode type, SourceLocation location);
 void ast_parameter_free(ASTParameter* param);
+
+/* Helper functions for control flow statements */
+ASTElseIfClause* ast_else_if_create(ASTExpression* cond, ASTBlock body, SourceLocation location);
+void ast_else_if_free(ASTElseIfClause* clause);
 
 #endif /* AST_H */

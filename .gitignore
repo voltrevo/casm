@@ -3,6 +3,9 @@ bin/
 casm
 test_casm
 
+# Output files
+out.c
+
 # Object files
 *.o
 

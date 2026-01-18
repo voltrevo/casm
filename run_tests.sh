@@ -71,6 +71,9 @@ SUPPORTED_EXAMPLES=(
     "examples/variables.csm"
     "examples/function_call.csm"
     "examples/mixed_types.csm"
+    "examples/if_statement.csm"
+    "examples/while_loop.csm"
+    "examples/for_loop.csm"
 )
 
 for example in "${SUPPORTED_EXAMPLES[@]}"; do

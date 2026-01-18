@@ -47,6 +47,7 @@ static const char* binop_to_string(BinaryOpType op) {
         case BINOP_GE:  return ">=";
         case BINOP_AND: return "&&";
         case BINOP_OR:  return "||";
+        case BINOP_ASSIGN: return "=";
         default:        return "?";
     }
 }
@@ -78,11 +79,18 @@ static void emit_expression(FILE* out, ASTExpression* expr) {
             break;
             
         case EXPR_BINARY_OP: {
-            fprintf(out, "(");
-            emit_expression(out, expr->as.binary_op.left);
-            fprintf(out, " %s ", binop_to_string(expr->as.binary_op.op));
-            emit_expression(out, expr->as.binary_op.right);
-            fprintf(out, ")");
+            /* Assignment doesn't need parentheses and has different spacing */
+            if (expr->as.binary_op.op == BINOP_ASSIGN) {
+                emit_expression(out, expr->as.binary_op.left);
+                fprintf(out, " = ");
+                emit_expression(out, expr->as.binary_op.right);
+            } else {
+                fprintf(out, "(");
+                emit_expression(out, expr->as.binary_op.left);
+                fprintf(out, " %s ", binop_to_string(expr->as.binary_op.op));
+                emit_expression(out, expr->as.binary_op.right);
+                fprintf(out, ")");
+            }
             break;
         }
         
@@ -147,6 +155,93 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
                 emit_expression(out, stmt->as.return_stmt.value);
             }
             fprintf(out, ";\n");
+            break;
+        }
+        
+        case STMT_IF: {
+            ASTIfStmt* if_stmt = &stmt->as.if_stmt;
+            
+            print_indent(out, indent);
+            fprintf(out, "if (");
+            emit_expression(out, if_stmt->condition);
+            fprintf(out, ") {\n");
+            emit_block(out, &if_stmt->then_body, indent + 1);
+            print_indent(out, indent);
+            fprintf(out, "}");
+            
+            /* Emit else-if chain */
+            for (ASTElseIfClause* elif = if_stmt->else_if_chain; elif; elif = elif->next) {
+                fprintf(out, " else if (");
+                emit_expression(out, elif->condition);
+                fprintf(out, ") {\n");
+                emit_block(out, &elif->body, indent + 1);
+                print_indent(out, indent);
+                fprintf(out, "}");
+            }
+            
+            /* Emit else block if present */
+            if (if_stmt->else_body) {
+                fprintf(out, " else {\n");
+                emit_block(out, if_stmt->else_body, indent + 1);
+                print_indent(out, indent);
+                fprintf(out, "}\n");
+            } else {
+                fprintf(out, "\n");
+            }
+            break;
+        }
+        
+        case STMT_WHILE: {
+            ASTWhileStmt* while_stmt = &stmt->as.while_stmt;
+            
+            print_indent(out, indent);
+            fprintf(out, "while (");
+            emit_expression(out, while_stmt->condition);
+            fprintf(out, ") {\n");
+            emit_block(out, &while_stmt->body, indent + 1);
+            print_indent(out, indent);
+            fprintf(out, "}\n");
+            break;
+        }
+        
+        case STMT_FOR: {
+            ASTForStmt* for_stmt = &stmt->as.for_stmt;
+            
+            print_indent(out, indent);
+            fprintf(out, "for (");
+            
+            /* Emit init */
+            if (for_stmt->init) {
+                if (for_stmt->init->type == STMT_VAR_DECL) {
+                    /* Variable declaration in for init */
+                    ASTVarDecl* var = &for_stmt->init->as.var_decl_stmt.var_decl;
+                    fprintf(out, "%s %s", casm_type_to_c_type(var->type.type), var->name);
+                    if (var->initializer) {
+                        fprintf(out, " = ");
+                        emit_expression(out, var->initializer);
+                    }
+                } else if (for_stmt->init->type == STMT_EXPR) {
+                    /* Expression statement in for init */
+                    emit_expression(out, for_stmt->init->as.expr_stmt.expr);
+                }
+            }
+            fprintf(out, "; ");
+            
+            /* Emit condition */
+            if (for_stmt->condition) {
+                emit_expression(out, for_stmt->condition);
+            }
+            fprintf(out, "; ");
+            
+            /* Emit update */
+            if (for_stmt->update) {
+                emit_expression(out, for_stmt->update);
+            }
+            fprintf(out, ") {\n");
+            
+            emit_block(out, &for_stmt->body, indent + 1);
+            print_indent(out, indent);
+            fprintf(out, "}\n");
             break;
         }
     }

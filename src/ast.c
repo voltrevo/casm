@@ -133,6 +133,31 @@ static void ast_statement_free_contents(ASTStatement* stmt) {
             }
             xfree(stmt->as.var_decl_stmt.var_decl.name);
             break;
+        case STMT_IF:
+            ast_expression_free(stmt->as.if_stmt.condition);
+            ast_block_free(&stmt->as.if_stmt.then_body);
+            ast_else_if_free(stmt->as.if_stmt.else_if_chain);
+            if (stmt->as.if_stmt.else_body) {
+                ast_block_free(stmt->as.if_stmt.else_body);
+                xfree(stmt->as.if_stmt.else_body);
+            }
+            break;
+        case STMT_WHILE:
+            ast_expression_free(stmt->as.while_stmt.condition);
+            ast_block_free(&stmt->as.while_stmt.body);
+            break;
+        case STMT_FOR:
+            if (stmt->as.for_stmt.init) {
+                ast_statement_free(stmt->as.for_stmt.init);
+            }
+            if (stmt->as.for_stmt.condition) {
+                ast_expression_free(stmt->as.for_stmt.condition);
+            }
+            if (stmt->as.for_stmt.update) {
+                ast_expression_free(stmt->as.for_stmt.update);
+            }
+            ast_block_free(&stmt->as.for_stmt.body);
+            break;
     }
 }
 
@@ -190,3 +215,21 @@ void ast_parameter_free(ASTParameter* param) {
     if (!param) return;
     xfree(param->name);
 }
+
+ASTElseIfClause* ast_else_if_create(ASTExpression* cond, ASTBlock body, SourceLocation location) {
+    (void)location;  /* Suppress unused parameter warning */
+    ASTElseIfClause* clause = xmalloc(sizeof(ASTElseIfClause));
+    clause->condition = cond;
+    clause->body = body;
+    clause->next = NULL;
+    return clause;
+}
+
+void ast_else_if_free(ASTElseIfClause* clause) {
+    if (!clause) return;
+    ast_expression_free(clause->condition);
+    ast_block_free(&clause->body);
+    ast_else_if_free(clause->next);  /* Recursive free of chain */
+    xfree(clause);
+}
+

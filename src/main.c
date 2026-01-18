@@ -101,15 +101,8 @@ int main(int argc, char** argv) {
         /* Generate output filename if not specified */
         char output_buffer[512];
         if (!output_file) {
-            /* Replace .csm with .c */
-            strncpy(output_buffer, source_file, sizeof(output_buffer) - 1);
-            output_buffer[sizeof(output_buffer) - 1] = '\0';
-            char* dot = strrchr(output_buffer, '.');
-            if (dot && strcmp(dot, ".csm") == 0) {
-                strcpy(dot, ".c");
-            } else {
-                strcat(output_buffer, ".c");
-            }
+            /* Always output to out.c */
+            snprintf(output_buffer, sizeof(output_buffer), "out.c");
             output_file = output_buffer;
         }
         
