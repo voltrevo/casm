@@ -1,0 +1,10 @@
+// Utility module that imports from base_math and adds more functions
+#import add from "./base_math.csm";
+
+i32 increment(i32 x) {
+    return add(x, 1);
+}
+
+i32 double_value(i32 x) {
+    return add(x, x);
+}

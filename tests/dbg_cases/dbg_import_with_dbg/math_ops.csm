@@ -1,0 +1,8 @@
+// Math utilities
+i32 square(i32 x) {
+    return x * x;
+}
+
+i32 cube(i32 x) {
+    return x * x * x;
+}

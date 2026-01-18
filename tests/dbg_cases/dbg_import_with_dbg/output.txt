@@ -1,0 +1,3 @@
+test.csm:6:4: square() = 9
+test.csm:7:4: cube() = 27
+test.csm:8:4: square() = 64

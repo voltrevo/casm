@@ -1,0 +1,6 @@
+// Test importing non-existent function
+#import add, nonexistent from "./math.csm";
+
+i32 main() {
+    return 0;
+}

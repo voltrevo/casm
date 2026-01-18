@@ -1,0 +1,2 @@
+test.csm:7:4: sum = 15
+test.csm:8:4: product = 12

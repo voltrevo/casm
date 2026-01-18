@@ -1,0 +1,10 @@
+// Test dbg() with simple function
+i32 add(i32 a, i32 b) {
+    return a + b;
+}
+
+i32 main() {
+    i32 result = add(5, 3);
+    dbg(result);
+    return 0;
+}

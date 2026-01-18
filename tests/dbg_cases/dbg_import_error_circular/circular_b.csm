@@ -1,0 +1,6 @@
+// File B - imports from A (creating circle)
+#import func_a from "./circular_a.csm";
+
+i32 func_b() {
+    return 2;
+}

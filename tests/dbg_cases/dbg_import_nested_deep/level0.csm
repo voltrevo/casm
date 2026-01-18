@@ -1,0 +1,4 @@
+// Level 0 - Base utilities
+i32 base_add(i32 a, i32 b) {
+    return a + b;
+}

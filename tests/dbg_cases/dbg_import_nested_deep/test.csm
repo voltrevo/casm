@@ -1,0 +1,8 @@
+// Level 3 - Top level importing from level 2
+#import level2_add_two from "./level2.csm";
+
+i32 main() {
+    i32 result = level2_add_two(5);
+    dbg(result);
+    return 0;
+}

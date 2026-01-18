@@ -1,0 +1,8 @@
+// Test dbg() with imported functions
+#import add from "./math.csm";
+
+i32 main() {
+    i32 result = add(5, 3);
+    dbg(result);
+    return 0;
+}

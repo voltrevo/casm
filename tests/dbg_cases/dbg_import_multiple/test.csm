@@ -1,0 +1,10 @@
+// Test dbg() with multiple imports
+#import add, multiply from "./math.csm";
+
+i32 main() {
+    i32 sum = add(10, 5);
+    i32 product = multiply(3, 4);
+    dbg(sum);
+    dbg(product);
+    return 0;
+}

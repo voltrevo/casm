@@ -138,8 +138,6 @@ int main(int argc, char** argv) {
             xfree(source);
             return 1;
         }
-        
-        printf("Generated C code: %s\n", output_file);
     } else if (strcmp(target, "wat") == 0) {
         /* Generate output filename if not specified */
         char output_buffer[512];

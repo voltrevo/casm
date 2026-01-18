@@ -1284,7 +1284,7 @@ ASTProgram* parser_parse(Parser* parser) {
             program->import_count++;
         } else {
             /* Import failed to parse - clean up and skip to next */
-            ast_import_free(&temp_import);
+            ast_import_free_contents(&temp_import);
             advance(parser); /* Skip the problematic token */
         }
     }

@@ -1,0 +1,12 @@
+// Math utility module
+i32 add(i32 a, i32 b) {
+    return a + b;
+}
+
+i32 multiply(i32 a, i32 b) {
+    return a * b;
+}
+
+i32 subtract(i32 a, i32 b) {
+    return a - b;
+}

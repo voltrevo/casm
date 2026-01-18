@@ -7,6 +7,9 @@
 /* Global variable to track source filename for dbg output */
 static const char* g_source_filename = "unknown.csm";
 
+/* Global counter for unique dbg temporary variables */
+static int g_dbg_tmp_counter = 0;
+
 /* Helper: Map CASM type to C type string */
 static const char* casm_type_to_c_type(CasmType type) {
     switch (type) {
@@ -296,16 +299,27 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
         case STMT_DBG: {
             ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
             
+            /* Store temporary variable names for each argument */
+            char** tmp_names = xmalloc(dbg->argument_count * sizeof(char*));
+            
             /* First, check if any arguments are function calls */
             /* If so, we need to store their values in temp variables */
             for (int i = 0; i < dbg->argument_count; i++) {
                 if (is_function_call(&dbg->arguments[i])) {
+                    /* Create unique temporary variable name */
+                    char tmp_name_buf[64];
+                    snprintf(tmp_name_buf, sizeof(tmp_name_buf), "__dbg_tmp_%d", g_dbg_tmp_counter++);
+                    tmp_names[i] = xstrdup(tmp_name_buf);
+                    
                     /* Emit temporary variable assignment for this function call */
                     print_indent(out, indent);
-                    fprintf(out, "%s __dbg_tmp_%d = ",
-                            casm_type_to_c_type(dbg->arguments[i].resolved_type), i);
+                    fprintf(out, "%s %s = ",
+                            casm_type_to_c_type(dbg->arguments[i].resolved_type),
+                            tmp_names[i]);
                     emit_expression(out, &dbg->arguments[i]);
                     fprintf(out, ";\n");
+                } else {
+                    tmp_names[i] = NULL;
                 }
             }
             
@@ -348,15 +362,15 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
                 CasmType arg_type = dbg->arguments[i].resolved_type;
                 
                 /* Use temp variable if this was a function call, otherwise emit expression */
-                if (is_function_call(&dbg->arguments[i])) {
+                if (tmp_names[i] != NULL) {
                     if (arg_type == TYPE_BOOL) {
-                        fprintf(out, "__dbg_tmp_%d ? \"true\" : \"false\"", i);
+                        fprintf(out, "%s ? \"true\" : \"false\"", tmp_names[i]);
                     } else if (arg_type == TYPE_I64 || arg_type == TYPE_U64) {
-                        fprintf(out, "(long long)__dbg_tmp_%d", i);
+                        fprintf(out, "(long long)%s", tmp_names[i]);
                     } else if (arg_type == TYPE_U32 || arg_type == TYPE_U8 || arg_type == TYPE_U16) {
-                        fprintf(out, "(unsigned int)__dbg_tmp_%d", i);
+                        fprintf(out, "(unsigned int)%s", tmp_names[i]);
                     } else {
-                        fprintf(out, "__dbg_tmp_%d", i);
+                        fprintf(out, "%s", tmp_names[i]);
                     }
                 } else {
                     /* For non-function-call expressions, emit them directly as before */
@@ -378,6 +392,14 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
                 }
             }
             fprintf(out, ");\n");
+            
+            /* Free temporary names */
+            for (int i = 0; i < dbg->argument_count; i++) {
+                if (tmp_names[i] != NULL) {
+                    xfree(tmp_names[i]);
+                }
+            }
+            xfree(tmp_names);
             break;
         }
     }

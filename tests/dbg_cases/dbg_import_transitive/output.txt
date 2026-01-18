@@ -1,0 +1,2 @@
+test.csm:8:4: inc_x = 6
+test.csm:9:4: double_x = 10

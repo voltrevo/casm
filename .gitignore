@@ -2,6 +2,7 @@
 bin/
 casm
 test_casm
+test_exe
 
 # Output files
 out.c

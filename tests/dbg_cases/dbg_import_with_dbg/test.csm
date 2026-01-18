@@ -1,0 +1,10 @@
+// Test dbg with imported function calls as arguments
+#import square, cube from "./math_ops.csm";
+
+i32 main() {
+    i32 x = 3;
+    dbg(square(x));
+    dbg(cube(x));
+    dbg(square(cube(2)));
+    return 0;
+}

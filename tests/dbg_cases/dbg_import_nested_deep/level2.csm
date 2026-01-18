@@ -1,0 +1,6 @@
+// Level 2 - Imports from level 1
+#import level1_add_one from "./level1.csm";
+
+i32 level2_add_two(i32 x) {
+    return level1_add_one(level1_add_one(x));
+}

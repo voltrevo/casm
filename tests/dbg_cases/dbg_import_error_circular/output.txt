@@ -1,0 +1,1 @@
+Error: Circular import detected: '/home/andrew/casm/tests/dbg_cases/dbg_import_error_circular/circular_a.csm'

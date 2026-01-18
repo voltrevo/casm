@@ -1,0 +1,11 @@
+// Test transitive imports - importing from utils which imports from base_math
+#import increment, double_value from "./utils.csm";
+
+i32 main() {
+    i32 x = 5;
+    i32 inc_x = increment(x);
+    i32 double_x = double_value(x);
+    dbg(inc_x);
+    dbg(double_x);
+    return 0;
+}

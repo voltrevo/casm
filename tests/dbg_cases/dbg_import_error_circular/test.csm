@@ -1,0 +1,6 @@
+// Test - main file tries to import from A which imports from B which imports from A
+#import func_a from "./circular_a.csm";
+
+i32 main() {
+    return 0;
+}
