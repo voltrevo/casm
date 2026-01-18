@@ -76,7 +76,7 @@ SUPPORTED_EXAMPLES=(
 for example in "${SUPPORTED_EXAMPLES[@]}"; do
     if [ -f "$example" ]; then
         echo -n "  Testing $example... "
-        if timeout ${EXAMPLE_TEST_TIMEOUT} ./bin/casm "$example" >/dev/null 2>&1; then
+        if timeout ${EXAMPLE_TEST_TIMEOUT} ./bin/casm --target=c "$example" >/dev/null 2>&1; then
             echo "✓"
             EXAMPLES_PASSED=$((EXAMPLES_PASSED + 1))
         else

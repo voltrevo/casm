@@ -19,7 +19,7 @@ LDFLAGS = -lm
 BIN_DIR = bin
 
 # Source files
-SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
+SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c
 TEST_SOURCES = tests/test_lexer.c src/lexer.c src/utils.c
 SEMANTICS_TEST_SOURCES = tests/test_semantics.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
 
