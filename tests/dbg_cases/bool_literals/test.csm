@@ -1,0 +1,5 @@
+// Test dbg() with boolean literals
+i32 main() {
+    dbg(true, false);
+    return 0;
+}

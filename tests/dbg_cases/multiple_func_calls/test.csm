@@ -1,0 +1,13 @@
+// Test dbg() with multiple function calls
+i32 add(i32 a, i32 b) {
+    return a + b;
+}
+
+i32 multiply(i32 a, i32 b) {
+    return a * b;
+}
+
+i32 main() {
+    dbg(add(2, 3), multiply(4, 5));
+    return 0;
+}

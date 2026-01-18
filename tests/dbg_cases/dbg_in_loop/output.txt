@@ -1,0 +1,3 @@
+test.csm:5:8: i = 0
+test.csm:5:8: i = 1
+test.csm:5:8: i = 2

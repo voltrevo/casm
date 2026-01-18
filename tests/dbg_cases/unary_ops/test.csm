@@ -1,0 +1,7 @@
+// Test dbg() with unary operators
+i32 main() {
+    i32 x = 5;
+    bool b = true;
+    dbg(-x, !b);
+    return 0;
+}

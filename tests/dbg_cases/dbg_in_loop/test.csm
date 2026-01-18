@@ -1,0 +1,9 @@
+// Test dbg() in loops
+i32 main() {
+    i32 i = 0;
+    while (i < 3) {
+        dbg(i);
+        i = i + 1;
+    }
+    return 0;
+}

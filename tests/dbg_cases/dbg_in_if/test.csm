@@ -1,0 +1,10 @@
+// Test dbg() in if statements
+i32 main() {
+    i32 x = 10;
+    if (x > 5) {
+        dbg(x);
+    } else {
+        dbg(0);
+    }
+    return 0;
+}
