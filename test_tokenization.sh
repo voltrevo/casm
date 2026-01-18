@@ -42,13 +42,15 @@ echo "Running tokenization tests..."
 echo
 
 # Valid programs
-run_test "simple_add" "$EXAMPLES_DIR/simple_add.c" "true"
-run_test "variables" "$EXAMPLES_DIR/variables.c" "true"
-run_test "function_call" "$EXAMPLES_DIR/function_call.c" "true"
-run_test "if_statement" "$EXAMPLES_DIR/if_statement.c" "true"
-run_test "while_loop" "$EXAMPLES_DIR/while_loop.c" "true"
-run_test "for_loop" "$EXAMPLES_DIR/for_loop.c" "true"
-run_test "all_operators" "$EXAMPLES_DIR/all_operators.c" "true"
+run_test "simple_add" "$EXAMPLES_DIR/simple_add.csm" "true"
+run_test "variables" "$EXAMPLES_DIR/variables.csm" "true"
+run_test "function_call" "$EXAMPLES_DIR/function_call.csm" "true"
+run_test "if_statement" "$EXAMPLES_DIR/if_statement.csm" "true"
+run_test "while_loop" "$EXAMPLES_DIR/while_loop.csm" "true"
+run_test "for_loop" "$EXAMPLES_DIR/for_loop.csm" "true"
+run_test "all_operators" "$EXAMPLES_DIR/all_operators.csm" "true"
+run_test "bool_type" "$EXAMPLES_DIR/bool_type.csm" "true"
+run_test "mixed_types" "$EXAMPLES_DIR/mixed_types.csm" "true"
 
 echo
 echo "========================================="

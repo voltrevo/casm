@@ -118,13 +118,37 @@ static Token scan_identifier(Lexer* lexer) {
     
     /* Check for keywords */
     TokenType type = TOK_IDENTIFIER;
-    if (length == 3 && strncmp(text, "int", 3) == 0) type = TOK_INT;
-    else if (length == 4 && strncmp(text, "void", 4) == 0) type = TOK_VOID;
-    else if (length == 2 && strncmp(text, "if", 2) == 0) type = TOK_IF;
-    else if (length == 4 && strncmp(text, "else", 4) == 0) type = TOK_ELSE;
-    else if (length == 5 && strncmp(text, "while", 5) == 0) type = TOK_WHILE;
-    else if (length == 3 && strncmp(text, "for", 3) == 0) type = TOK_FOR;
-    else if (length == 6 && strncmp(text, "return", 6) == 0) type = TOK_RETURN;
+    
+    switch (length) {
+        case 2:
+            if (strncmp(text, "i8", 2) == 0) type = TOK_I8;
+            else if (strncmp(text, "u8", 2) == 0) type = TOK_U8;
+            else if (strncmp(text, "if", 2) == 0) type = TOK_IF;
+            break;
+        case 3:
+            if (strncmp(text, "i16", 3) == 0) type = TOK_I16;
+            else if (strncmp(text, "i32", 3) == 0) type = TOK_I32;
+            else if (strncmp(text, "i64", 3) == 0) type = TOK_I64;
+            else if (strncmp(text, "u16", 3) == 0) type = TOK_U16;
+            else if (strncmp(text, "u32", 3) == 0) type = TOK_U32;
+            else if (strncmp(text, "u64", 3) == 0) type = TOK_U64;
+            else if (strncmp(text, "for", 3) == 0) type = TOK_FOR;
+            break;
+        case 4:
+            if (strncmp(text, "bool", 4) == 0) type = TOK_BOOL;
+            else if (strncmp(text, "void", 4) == 0) type = TOK_VOID;
+            else if (strncmp(text, "else", 4) == 0) type = TOK_ELSE;
+            else if (strncmp(text, "true", 4) == 0) type = TOK_TRUE;
+            break;
+        case 5:
+            if (strncmp(text, "while", 5) == 0) type = TOK_WHILE;
+            else if (strncmp(text, "false", 5) == 0) type = TOK_FALSE;
+            break;
+        case 6:
+            if (strncmp(text, "return", 6) == 0) type = TOK_RETURN;
+            else if (strncmp(text, "import", 6) == 0) type = TOK_IMPORT;
+            break;
+    }
     
     Token token = make_token(lexer, type, start, length);
     token.location.line = line;
@@ -276,13 +300,24 @@ const char* token_type_name(TokenType type) {
     switch (type) {
         case TOK_INT_LITERAL: return "INT_LITERAL";
         case TOK_IDENTIFIER: return "IDENTIFIER";
-        case TOK_INT: return "INT";
+        case TOK_I8: return "I8";
+        case TOK_I16: return "I16";
+        case TOK_I32: return "I32";
+        case TOK_I64: return "I64";
+        case TOK_U8: return "U8";
+        case TOK_U16: return "U16";
+        case TOK_U32: return "U32";
+        case TOK_U64: return "U64";
+        case TOK_BOOL: return "BOOL";
         case TOK_VOID: return "VOID";
         case TOK_IF: return "IF";
         case TOK_ELSE: return "ELSE";
         case TOK_WHILE: return "WHILE";
         case TOK_FOR: return "FOR";
         case TOK_RETURN: return "RETURN";
+        case TOK_TRUE: return "TRUE";
+        case TOK_FALSE: return "FALSE";
+        case TOK_IMPORT: return "IMPORT";
         case TOK_PLUS: return "PLUS";
         case TOK_MINUS: return "MINUS";
         case TOK_STAR: return "STAR";

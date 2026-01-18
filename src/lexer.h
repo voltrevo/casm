@@ -9,14 +9,31 @@ typedef enum {
     TOK_INT_LITERAL,
     TOK_IDENTIFIER,
     
-    /* Keywords */
-    TOK_INT,
+    /* Keywords - Types */
+    TOK_I8,
+    TOK_I16,
+    TOK_I32,
+    TOK_I64,
+    TOK_U8,
+    TOK_U16,
+    TOK_U32,
+    TOK_U64,
+    TOK_BOOL,
     TOK_VOID,
+    
+    /* Keywords - Control Flow */
     TOK_IF,
     TOK_ELSE,
     TOK_WHILE,
     TOK_FOR,
     TOK_RETURN,
+    
+    /* Keywords - Literals */
+    TOK_TRUE,
+    TOK_FALSE,
+    
+    /* Keywords - Module */
+    TOK_IMPORT,
     
     /* Operators */
     TOK_PLUS,

@@ -1,12 +1,12 @@
 // Program with all operators
-int main() {
-    int a = 10;
-    int b = 5;
-    int c = a + b;
-    int d = a - b;
-    int e = a * b;
-    int f = a / b;
-    int g = a % b;
+i32 main() {
+    i32 a = 10;
+    i32 b = 5;
+    i32 c = a + b;
+    i32 d = a - b;
+    i32 e = a * b;
+    i32 f = a / b;
+    i32 g = a % b;
     
     if (a == 10 && b == 5) {
         return 1;

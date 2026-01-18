@@ -1,8 +1,12 @@
-# C to WebAssembly Compiler - Implementation Plan
+# Casm (C-like to WebAssembly) Compiler - Implementation Plan
 
 ## Project Overview
 
-A toy C to WebAssembly (WAT) compiler written in C, targeting a useful subset of the C language.
+A compiler written in C, compiling Casm (a C-like language) to WebAssembly (WAT) and C. Casm is inspired by C but deviates significantly:
+- **No forward declarations needed** (2-pass parser)
+- **Explicit type system**: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `bool`, `void`
+- **Module imports** instead of `#include`: `#import "./module.csm"`
+- **File extension**: `.csm`
 
 ### Design Decisions
 
@@ -12,41 +16,54 @@ A toy C to WebAssembly (WAT) compiler written in C, targeting a useful subset of
 | Parser Strategy | 2-pass | Avoids forward declaration requirement |
 | AST Representation | Explicit structs per node type | Type-safe, efficient |
 | Memory Management | Manual malloc/free | C99 compatible, explicit control |
-| WAT Output | Direct text generation | Simple, readable, debuggable |
-| Integer Size | i32 (WebAssembly native) | Matches WebAssembly's type system |
+| Default Output | WAT text | Simple, readable, debuggable |
+| Secondary Output | C code | For testing, validation, and alternative compilation path |
 | Error Handling | Exit with error messages + line/column info | Practical for CLI tool with debugging info |
 | Testing Strategy | Simple test harness + program output testing | Direct validation of functionality |
 | Build System | Makefile | Simple, portable, standard |
 
-## Target Language Features (MVP)
+## Casm Language Features
 
-### Phase 1: Tokenization (CURRENT)
-- Keywords: `int`, `if`, `else`, `while`, `for`, `return`, `void`, `{`, `}`, `;`, `(`, `)`
+### Type System
+- **Integer types**: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`
+- **Boolean type**: `bool` with literals `true`, `false`
+- **Void type**: `void` for functions with no return value
+- **Explicit type declarations**: All variables must have explicit types
+
+### Phase 1: Tokenization ✅ COMPLETE
+- Keywords: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `bool`, `void`, `true`, `false`, `if`, `else`, `while`, `for`, `return`, `#import`
 - Operators: `+`, `-`, `*`, `/`, `%`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `!`
-- Literals: decimal integers, identifiers
+- Literals: decimal integers, identifiers, boolean literals
 - Comments: `//` and `/* */`
 - Whitespace handling
 
-### Phase 2: Parsing (AST)
-- Global and local int variable declarations
+### Phase 2: Parsing (AST) - IN PROGRESS
 - Function definitions with parameters and return types
+- Variable declarations with explicit types
 - Binary/unary operations
 - Variable assignment and usage
 - Function calls
-- (Control flow and statements come later)
+- Module imports: `#import "./module.csm"`
 
 ### Phase 3: Symbol Table & Type System
-- Track int variables, function parameters, return types
+- Track variables with types
 - Scope management for local vs global
-- Basic type checking
+- Function signatures
+- Type checking and validation
 
-### Phase 4: Code Generation
+### Phase 4: Code Generation - C Backend (FIRST)
+- AST → C code output
+- Proper variable declarations with types
+- Function definitions and calls
+- Basic type conversions where needed
+
+### Phase 5: Code Generation - WAT Backend
 - AST → WAT text output
-- Integer arithmetic operations
-- Function calls and definitions
-- Variable storage via local/global i32 stack
+- Type-appropriate WebAssembly instructions
+- Variable storage via local/global stack
+- Module structure
 
-### Phase 5: Control Flow
+### Phase 6: Control Flow
 - if/else statements
 - while loops
 - for loops
@@ -59,20 +76,24 @@ casm/
 │   ├── main.c           # CLI entry point
 │   ├── lexer.c/h        # Tokenization with location tracking
 │   ├── parser.c/h       # AST building (recursive descent, 2-pass)
-│   ├── codegen.c/h      # WAT generation
+│   ├── codegen_c.c/h    # C code generation
+│   ├── codegen_wat.c/h  # WAT code generation
 │   ├── types.c/h        # Type system & symbol table
 │   ├── ast.c/h          # AST node definitions
 │   └── utils.c/h        # Memory, string handling, etc.
 ├── tests/
-│   ├── test_harness.c   # Simple test runner
+│   ├── test_harness.h   # Simple test runner
 │   ├── test_lexer.c     # Lexer tests
 │   ├── test_parser.c    # Parser tests
-│   └── test_codegen.c   # Code gen tests
+│   ├── test_codegen_c.c # C codegen tests
+│   └── test_codegen_wat.c # WAT codegen tests
 ├── examples/
-│   ├── add.c            # Simple arithmetic
-│   ├── factorial.c      # Recursion
-│   ├── fibonacci.c      # Loops
-│   └── loop.c           # Control flow
+│   ├── simple_add.csm       # Simple arithmetic
+│   ├── function_call.csm    # Function definitions and calls
+│   ├── if_statement.csm     # Conditional logic
+│   ├── while_loop.csm       # Loop control
+│   ├── for_loop.csm         # Loop variants
+│   └── all_operators.csm    # Operator testing
 ├── Makefile
 ├── README.md
 └── PLAN.md (this file)
@@ -80,41 +101,57 @@ casm/
 
 ## Implementation Milestones
 
-### Milestone 1: Tokenization ✓ In Progress
-- [x] Set up project structure (Makefile, directories)
-- [ ] Implement lexer with source location tracking (line, column)
-- [ ] Create simple test harness
-- [ ] Write test programs for tokenization
-- [ ] Test invalid token sequences
+### Milestone 1: Tokenization ✅ DONE
+- [x] Set up project structure
+- [x] Implement lexer with source location tracking
+- [x] Create simple test harness
+- [x] Write test programs for tokenization
+- [x] 94 unit tests passing
 
-**Definition of Done**: Can tokenize valid C programs and reject invalid ones with clear error messages.
+### Milestone 2: Update Lexer for New Type System
+- [ ] Update keywords: remove `int`, add `i8`-`i64`, `u8`-`u64`, `bool`, `true`, `false`
+- [ ] Update example files to use `.csm` extension
+- [ ] Update tokenization tests for new keywords
+- [ ] Test that old `int` keyword is rejected
 
-### Milestone 2: Parsing
+### Milestone 3: Parsing
 - [ ] Implement recursive descent parser
 - [ ] Build AST node structures
 - [ ] Implement 2-pass approach (signature collection + body parsing)
 - [ ] Write parser tests
+- [ ] Support module imports parsing
 
-**Definition of Done**: Can parse valid C programs and produce correct AST; rejects invalid syntax.
+**Definition of Done**: Can parse valid Casm programs and produce correct AST; rejects invalid syntax.
 
-### Milestone 3: Type System
-- [ ] Implement symbol table
+### Milestone 4: Type System & Symbol Table
+- [ ] Implement type representation
+- [ ] Implement symbol table with type tracking
 - [ ] Track variable scopes
-- [ ] Implement basic type checking
+- [ ] Implement type checking
 - [ ] Write symbol table tests
 
-**Definition of Done**: Can validate variable declarations and usage.
+**Definition of Done**: Can validate variable declarations, types, and usage.
 
-### Milestone 4: Code Generation (Simple)
-- [ ] Implement WAT module generation
-- [ ] Generate function definitions and calls
-- [ ] Generate variable allocation and access
+### Milestone 5: C Code Generation
+- [ ] Implement C code output generation
+- [ ] Generate function definitions
+- [ ] Generate variable declarations with types
 - [ ] Generate arithmetic operations
-- [ ] Write codegen tests
+- [ ] Generate function calls
+- [ ] Write C codegen tests
 
-**Definition of Done**: Can compile simple int programs to WAT and execute them.
+**Definition of Done**: Can compile simple Casm programs to valid C code.
 
-### Milestone 5: Control Flow
+### Milestone 6: WAT Code Generation
+- [ ] Implement WAT module generation
+- [ ] Generate function definitions with proper types
+- [ ] Generate variable allocation and access
+- [ ] Generate type-specific arithmetic operations
+- [ ] Write WAT codegen tests
+
+**Definition of Done**: Can compile simple Casm programs to valid WAT.
+
+### Milestone 7: Control Flow
 - [ ] Implement if/else statements
 - [ ] Implement while loops
 - [ ] Implement for loops
@@ -124,67 +161,42 @@ casm/
 
 ## Testing Strategy
 
-### Test Harness Structure
-```c
-// Simple assertion-based testing
-#define TEST(name) void test_##name(void)
-#define ASSERT_EQ(actual, expected) ...
-#define ASSERT_STR_EQ(actual, expected) ...
-#define ASSERT_TRUE(condition) ...
-#define ASSERT_FALSE(condition) ...
-
-// Test runner
-int main() {
-    test_lexer_simple_int();
-    test_lexer_identifiers();
-    test_lexer_operators();
-    // ... etc
-}
-```
-
 ### Test Approach
 
 1. **Unit Tests**: Test individual components (lexer, parser, codegen)
-2. **Program Tests**: Write small C programs, compile them, check WAT output
+2. **Program Tests**: Write small Casm programs, compile to C and WAT, validate
 3. **Integration Tests**: Compile and validate full programs
+4. **Cross-validation**: Generate C, compile with gcc, run and compare output
 
-### Example Test Programs
+### Example Casm Program
 
-**tokenization tests:**
+**Input (add.csm)**
 ```c
-// valid_add.c
-int main() {
-    return 5 + 3;
-}
-
-// valid_vars.c
-int main() {
-    int x = 5;
-    int y = 3;
-    return x + y;
-}
-
-// invalid_unclosed_paren.c
-int main(
-    return 5;
-}
-```
-
-## Example Compilation
-
-### Input (hello_add.c)
-```c
-int add(int a, int b) {
+i32 add(i32 a, i32 b) {
     return a + b;
 }
 
-int main() {
-    int x = add(5, 3);
+i32 main() {
+    i32 x = add(5, 3);
     return x;
 }
 ```
 
-### Expected WAT Output
+**Expected C Output**
+```c
+#include <stdint.h>
+
+int32_t add(int32_t a, int32_t b) {
+    return a + b;
+}
+
+int32_t main() {
+    int32_t x = add(5, 3);
+    return x;
+}
+```
+
+**Expected WAT Output**
 ```wasm
 (module
   (func $add (param $a i32) (param $b i32) (result i32)
@@ -206,42 +218,57 @@ int main() {
 - Each token stores its source location
 - Handle single-line (`//`) and multi-line (`/* */`) comments
 - Distinguish keywords from identifiers
+- **Updated for Casm**: Recognize `i8`-`i64`, `u8`-`u64`, `bool`, `true`, `false`, `#import`
 
 ### Parser
 - **Pass 1**: Scan for function signatures and global variable declarations
 - **Pass 2**: Parse function bodies and expressions
 - Use recursive descent for expression parsing
 - Operator precedence: standard C precedence
+- Parse module imports
 
-### Code Generator
+### Code Generator (C)
+- Walk AST, emit C code
+- Map Casm types to C types (i32 → int32_t, etc.)
+- Maintain proper scoping for variables
+- Generate function prototypes and definitions
+
+### Code Generator (WAT)
 - Walk AST, emit WAT instructions
+- Map Casm types to WAT types (i32 → i32, bool → i32, etc.)
 - Maintain local variable stack frame
 - Track function signatures for call validation
+
+### Type System
+- Represent types as enum (I32, I64, U32, U64, BOOL, VOID, etc.)
+- Map types to C equivalents and WAT equivalents
+- Validate type compatibility in operations
 
 ### Symbol Table
 - Map variable names to types and storage locations
 - Support nested scopes (function parameters, local variables)
-- Function signatures stored globally
+- Function signatures stored globally with parameter and return types
 
-## Known Limitations
+## Known Limitations (MVP)
 
-- No structs (yet)
-- No pointers (yet)
-- No arrays (yet)
-- No strings (yet)
-- Only `int` type (yet)
+- No structs
+- No pointers/dereferencing
+- No arrays/indexing
+- No string literals
 - No floating point
-- No bitwise operations (yet)
+- No bitwise operations
 - No preprocessor
 - No optimization
+- Single-file compilation only (no separate compilation units yet)
 
-## Next Steps After MVP
+## Future Enhancements
 
-1. Add more types: `float`, `char`, `void`
-2. Add arrays and indexing
-3. Add pointers and dereferencing
-4. Add structs
-5. Add string literals
-6. Add more operators
-7. Optimization passes
-8. Better error recovery
+1. Additional types: `f32`, `f64`, `char`, `string`
+2. Arrays and indexing
+3. Pointers and dereferencing
+4. Structs and methods
+5. Module system with incremental compilation
+6. Optimization passes
+7. Better error recovery
+8. Inline assembly
+9. Built-in functions/intrinsics

@@ -71,7 +71,8 @@ void test_multiple_identifiers() {
 
 void test_keyword_int() {
     TokenList list = tokenize("int");
-    ASSERT_EQ(list.tokens[0].type, TOK_INT);
+    // "int" is no longer a keyword in Casm, it's an identifier
+    ASSERT_EQ(list.tokens[0].type, TOK_IDENTIFIER);
     ASSERT_EQ(list.tokens[1].type, TOK_EOF);
     free_token_list(list);
 }
@@ -79,6 +80,48 @@ void test_keyword_int() {
 void test_keyword_void() {
     TokenList list = tokenize("void");
     ASSERT_EQ(list.tokens[0].type, TOK_VOID);
+    ASSERT_EQ(list.tokens[1].type, TOK_EOF);
+    free_token_list(list);
+}
+
+void test_keyword_i32() {
+    TokenList list = tokenize("i32");
+    ASSERT_EQ(list.tokens[0].type, TOK_I32);
+    ASSERT_EQ(list.tokens[1].type, TOK_EOF);
+    free_token_list(list);
+}
+
+void test_keyword_i64() {
+    TokenList list = tokenize("i64");
+    ASSERT_EQ(list.tokens[0].type, TOK_I64);
+    ASSERT_EQ(list.tokens[1].type, TOK_EOF);
+    free_token_list(list);
+}
+
+void test_keyword_u32() {
+    TokenList list = tokenize("u32");
+    ASSERT_EQ(list.tokens[0].type, TOK_U32);
+    ASSERT_EQ(list.tokens[1].type, TOK_EOF);
+    free_token_list(list);
+}
+
+void test_keyword_bool() {
+    TokenList list = tokenize("bool");
+    ASSERT_EQ(list.tokens[0].type, TOK_BOOL);
+    ASSERT_EQ(list.tokens[1].type, TOK_EOF);
+    free_token_list(list);
+}
+
+void test_keyword_true() {
+    TokenList list = tokenize("true");
+    ASSERT_EQ(list.tokens[0].type, TOK_TRUE);
+    ASSERT_EQ(list.tokens[1].type, TOK_EOF);
+    free_token_list(list);
+}
+
+void test_keyword_false() {
+    TokenList list = tokenize("false");
+    ASSERT_EQ(list.tokens[0].type, TOK_FALSE);
     ASSERT_EQ(list.tokens[1].type, TOK_EOF);
     free_token_list(list);
 }
@@ -157,14 +200,14 @@ void test_braces() {
 }
 
 void test_simple_function() {
-    TokenList list = tokenize("int add(int a, int b) { return a + b; }");
-    ASSERT_EQ(list.tokens[0].type, TOK_INT);
+    TokenList list = tokenize("i32 add(i32 a, i32 b) { return a + b; }");
+    ASSERT_EQ(list.tokens[0].type, TOK_I32);
     ASSERT_EQ(list.tokens[1].type, TOK_IDENTIFIER);
     ASSERT_EQ(list.tokens[2].type, TOK_LPAREN);
-    ASSERT_EQ(list.tokens[3].type, TOK_INT);
+    ASSERT_EQ(list.tokens[3].type, TOK_I32);
     ASSERT_EQ(list.tokens[4].type, TOK_IDENTIFIER);
     ASSERT_EQ(list.tokens[5].type, TOK_COMMA);
-    ASSERT_EQ(list.tokens[6].type, TOK_INT);
+    ASSERT_EQ(list.tokens[6].type, TOK_I32);
     ASSERT_EQ(list.tokens[7].type, TOK_IDENTIFIER);
     ASSERT_EQ(list.tokens[8].type, TOK_RPAREN);
     ASSERT_EQ(list.tokens[9].type, TOK_LBRACE);
@@ -226,7 +269,7 @@ void test_identifier_with_numbers() {
 }
 
 void test_mixed_code() {
-    TokenList list = tokenize("int main() { int x = 10; return x; }");
+    TokenList list = tokenize("i32 main() { i32 x = 10; return x; }");
     /* Just verify it tokenizes without error */
     int found_error = 0;
     for (int i = 0; i < list.count; i++) {
@@ -246,6 +289,12 @@ int main() {
     RUN_TEST(test_multiple_identifiers);
     RUN_TEST(test_keyword_int);
     RUN_TEST(test_keyword_void);
+    RUN_TEST(test_keyword_i32);
+    RUN_TEST(test_keyword_i64);
+    RUN_TEST(test_keyword_u32);
+    RUN_TEST(test_keyword_bool);
+    RUN_TEST(test_keyword_true);
+    RUN_TEST(test_keyword_false);
     RUN_TEST(test_keyword_if);
     RUN_TEST(test_keyword_while);
     RUN_TEST(test_keyword_for);

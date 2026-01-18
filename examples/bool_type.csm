@@ -1,0 +1,13 @@
+// Program with bool type
+bool is_positive(i32 x) {
+    return x > 0;
+}
+
+i32 main() {
+    bool result = is_positive(5);
+    if (result) {
+        return 1;
+    } else {
+        return 0;
+    }
+}

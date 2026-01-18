@@ -1,6 +1,6 @@
 // Program with variables
-int main() {
-    int x = 5;
-    int y = 3;
+i32 main() {
+    i32 x = 5;
+    i32 y = 3;
     return x + y;
 }
