@@ -189,15 +189,28 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
         }
         
         case EXPR_FUNCTION_CALL: {
+            char* module_name = NULL;
+            char* func_name = NULL;
+            parse_qualified_name(expr->as.function_call.function_name, &module_name, &func_name);
+            
             FunctionSymbol* func = symbol_table_lookup_function(table, expr->as.function_call.function_name);
             
             if (!func) {
                 char msg[256];
-                snprintf(msg, sizeof(msg), "Undefined function '%s'", expr->as.function_call.function_name);
+                if (module_name) {
+                    snprintf(msg, sizeof(msg), "Module '%s' has no function '%s'", module_name, func_name);
+                } else {
+                    snprintf(msg, sizeof(msg), "Undefined function '%s'", expr->as.function_call.function_name);
+                }
                 semantic_error_list_add(errors, msg, expr->location);
                 expr->resolved_type = TYPE_VOID;
+                xfree(module_name);
+                xfree(func_name);
                 return TYPE_VOID;
             }
+            
+            xfree(module_name);
+            xfree(func_name);
             
             /* Check argument count */
             if (expr->as.function_call.argument_count != func->param_count) {

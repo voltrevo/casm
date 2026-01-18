@@ -37,6 +37,7 @@ void symbol_table_free(SymbolTable* table) {
     
     for (int i = 0; i < table->function_count; i++) {
         xfree(table->functions[i].name);
+        xfree(table->functions[i].module_name);
         if (table->functions[i].param_types) {
             xfree(table->functions[i].param_types);
         }
@@ -69,6 +70,7 @@ int symbol_table_add_function(SymbolTable* table, const char* name, CasmType ret
     FunctionSymbol* func = &table->functions[table->function_count];
     func->name = xmalloc(strlen(name) + 1);
     strcpy(func->name, name);
+    func->module_name = NULL;  /* No module for locally defined functions */
     func->return_type = return_type;
     func->param_count = param_count;
     func->location = location;
@@ -306,4 +308,22 @@ CasmType get_unary_op_result_type(UnaryOpType op, CasmType operand) {
 /* Check if type is numeric */
 int is_numeric_type(CasmType type) {
     return type >= TYPE_I8 && type <= TYPE_U64;
+}
+
+/* Parse a qualified name like "math:add" into module and function names
+ * If no colon, module_name is NULL
+ */
+void parse_qualified_name(const char* qualified_name, char** out_module, char** out_function) {
+    const char* colon = strchr(qualified_name, ':');
+    
+    if (!colon) {
+        /* No colon - it's just a function name */
+        *out_module = NULL;
+        *out_function = xstrdup(qualified_name);
+    } else {
+        /* Split at colon */
+        int module_len = colon - qualified_name;
+        *out_module = xstrndup(qualified_name, module_len);
+        *out_function = xstrdup(colon + 1);  /* Skip the colon */
+    }
 }

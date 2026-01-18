@@ -154,11 +154,33 @@ static ASTExpression* parse_primary(Parser* parser) {
         return expr;
     }
     
-    /* Identifier - could be variable or function call */
+     /* Identifier - could be variable or function call */
     if (token.type == TOK_IDENTIFIER) {
         char* name = xstrndup(token.lexeme, token.lexeme_len);
         SourceLocation location = token.location;
         advance(parser);
+        
+        /* Check for qualified name (module:name) */
+        if (check(parser, TOK_COLON)) {
+            advance(parser);  /* consume ':' */
+            
+            if (!check(parser, TOK_IDENTIFIER)) {
+                parser_error(parser, "Expected identifier after ':' in qualified name");
+                xfree(name);
+                return NULL;
+            }
+            
+            char* qualified_part = xstrndup(current_token(parser).lexeme, current_token(parser).lexeme_len);
+            advance(parser);
+            
+            /* Build qualified name: "module:name" */
+            int total_len = strlen(name) + 1 + strlen(qualified_part);
+            char* qualified_name = xmalloc(total_len + 1);
+            snprintf(qualified_name, total_len + 1, "%s:%s", name, qualified_part);
+            xfree(name);
+            xfree(qualified_part);
+            name = qualified_name;
+        }
         
         /* Check for function call */
         if (check(parser, TOK_LPAREN)) {
@@ -1040,6 +1062,100 @@ static void parse_block(Parser* parser, ASTBlock* out_block) {
     }
 }
 
+/* Parse an import statement - fills in provided struct */
+static int parse_import(Parser* parser, ASTImportStatement* out_import) {
+    int error_count_before = parser->errors->error_count;
+    
+    /* Expect: # import name1, name2, ... from "path" ; */
+    if (!match(parser, TOK_HASH)) {
+        parser_error(parser, "Expected '#' for import statement");
+        return 0;
+    }
+    
+    if (!match(parser, TOK_IMPORT)) {
+        parser_error(parser, "Expected 'import' keyword after '#'");
+        return 0;
+    }
+    
+    /* Parse comma-separated import names */
+    char** imported_names = xmalloc(10 * sizeof(char*));
+    int name_count = 0;
+    int name_capacity = 10;
+    SourceLocation location = current_token(parser).location;
+    
+    while (1) {
+        if (!check(parser, TOK_IDENTIFIER)) {
+            parser_error(parser, "Expected identifier in import list");
+            for (int i = 0; i < name_count; i++) {
+                xfree(imported_names[i]);
+            }
+            xfree(imported_names);
+            return 0;
+        }
+        
+        Token name_token = current_token(parser);
+        char* name = xstrndup(name_token.lexeme, name_token.lexeme_len);
+        advance(parser);
+        
+        if (name_count >= name_capacity) {
+            name_capacity *= 2;
+            imported_names = xrealloc(imported_names, name_capacity * sizeof(char*));
+        }
+        imported_names[name_count++] = name;
+        
+        /* Check for comma or move to 'from' */
+        if (!match(parser, TOK_COMMA)) {
+            break;
+        }
+    }
+    
+    if (!match(parser, TOK_FROM)) {
+        parser_error(parser, "Expected 'from' after import names");
+        for (int i = 0; i < name_count; i++) {
+            xfree(imported_names[i]);
+        }
+        xfree(imported_names);
+        return 0;
+    }
+    
+    if (!check(parser, TOK_STRING)) {
+        parser_error(parser, "Expected string literal for file path");
+        for (int i = 0; i < name_count; i++) {
+            xfree(imported_names[i]);
+        }
+        xfree(imported_names);
+        return 0;
+    }
+    
+    Token path_token = current_token(parser);
+    /* Extract string content (remove quotes) */
+    const char* quoted_path = path_token.lexeme;
+    int path_len = path_token.lexeme_len;
+    if (path_len >= 2 && quoted_path[0] == '"' && quoted_path[path_len - 1] == '"') {
+        path_len -= 2;
+        quoted_path++;
+    }
+    char* file_path = xstrndup(quoted_path, path_len);
+    advance(parser);
+    
+    if (!match(parser, TOK_SEMICOLON)) {
+        parser_error(parser, "Expected ';' after import statement");
+        for (int i = 0; i < name_count; i++) {
+            xfree(imported_names[i]);
+        }
+        xfree(imported_names);
+        xfree(file_path);
+        return 0;
+    }
+    
+    out_import->imported_names = imported_names;
+    out_import->name_count = name_count;
+    out_import->file_path = file_path;
+    out_import->location = location;
+    
+    return parser->errors->error_count == error_count_before;
+}
+
 /* Parse a function definition - fills in provided struct */
 static int parse_function(Parser* parser, ASTFunctionDef* out_func) {
     int error_count_before = parser->errors->error_count;
@@ -1152,6 +1268,28 @@ static int parse_function(Parser* parser, ASTFunctionDef* out_func) {
 ASTProgram* parser_parse(Parser* parser) {
     ASTProgram* program = ast_program_create();
     
+    /* First, parse all import statements */
+    int import_capacity = 10;
+    program->imports = xmalloc(import_capacity * sizeof(ASTImportStatement));
+    
+    while (check(parser, TOK_HASH)) {
+        if (program->import_count >= import_capacity) {
+            import_capacity *= 2;
+            program->imports = xrealloc(program->imports, import_capacity * sizeof(ASTImportStatement));
+        }
+        
+        ASTImportStatement temp_import = {0};
+        if (parse_import(parser, &temp_import)) {
+            program->imports[program->import_count] = temp_import;
+            program->import_count++;
+        } else {
+            /* Import failed to parse - clean up and skip to next */
+            ast_import_free(&temp_import);
+            advance(parser); /* Skip the problematic token */
+        }
+    }
+    
+    /* Then, parse function definitions */
     int func_capacity = 10;
     program->functions = xmalloc(func_capacity * sizeof(ASTFunctionDef));
     

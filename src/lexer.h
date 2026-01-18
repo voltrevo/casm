@@ -35,10 +35,14 @@ typedef enum {
     TOK_TRUE,
     TOK_FALSE,
     
-    /* Keywords - Module */
+     /* Keywords - Module */
     TOK_IMPORT,
+    TOK_FROM,
     
     /* Operators */
+    TOK_HASH,        /* # */
+    TOK_COLON,       /* : */
+    TOK_STRING,      /* String literal */
     TOK_PLUS,
     TOK_MINUS,
     TOK_STAR,        /* * */

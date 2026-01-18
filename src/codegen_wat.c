@@ -21,6 +21,17 @@ static const char* casm_type_to_wat_type(CasmType type) {
     }
 }
 
+/* Helper: Convert qualified name to mangled name (module:name -> module_name) */
+static char* mangle_function_name(const char* qualified_name) {
+    char* mangled = xstrdup(qualified_name);
+    for (int i = 0; mangled[i]; i++) {
+        if (mangled[i] == ':') {
+            mangled[i] = '_';
+        }
+    }
+    return mangled;
+}
+
 /* Helper: Print indent (2 spaces per level) */
 static void print_indent(FILE* out, int indent) {
     for (int i = 0; i < indent * 2; i++) {
@@ -160,7 +171,9 @@ static void emit_expression(FILE* out, ASTExpression* expr, int indent) {
                 fprintf(out, "\n");
             }
             print_indent(out, indent);
-            fprintf(out, "call $%s", call->function_name);
+            char* mangled_name = mangle_function_name(call->function_name);
+            fprintf(out, "call $%s", mangled_name);
+            xfree(mangled_name);
             break;
         }
     }
@@ -442,9 +455,10 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
 static void emit_function_definitions(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
+        char* mangled_name = mangle_function_name(func->name);
         
         print_indent(out, 1);
-        fprintf(out, "(func $%s", func->name);
+        fprintf(out, "(func $%s", mangled_name);
         
         /* Emit parameters */
         for (int j = 0; j < func->parameter_count; j++) {
@@ -481,6 +495,8 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
         if (i < program->function_count - 1) {
             fprintf(out, "\n");
         }
+        
+        xfree(mangled_name);
     }
 }
 

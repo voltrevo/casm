@@ -40,6 +40,8 @@ CasmType token_type_to_casm_type(TokenType tok_type) {
 
 ASTProgram* ast_program_create(void) {
     ASTProgram* program = xmalloc(sizeof(ASTProgram));
+    program->imports = NULL;
+    program->import_count = 0;
     program->functions = NULL;
     program->function_count = 0;
     return program;
@@ -47,11 +49,42 @@ ASTProgram* ast_program_create(void) {
 
 void ast_program_free(ASTProgram* program) {
     if (!program) return;
+    for (int i = 0; i < program->import_count; i++) {
+        ast_import_free_contents(&program->imports[i]);
+    }
+    xfree(program->imports);
     for (int i = 0; i < program->function_count; i++) {
         ast_function_free(&program->functions[i]);
     }
     xfree(program->functions);
     xfree(program);
+}
+
+ASTImportStatement* ast_import_create(char** names, int name_count, const char* file_path, SourceLocation location) {
+    ASTImportStatement* import = xmalloc(sizeof(ASTImportStatement));
+    import->imported_names = xmalloc(name_count * sizeof(char*));
+    for (int i = 0; i < name_count; i++) {
+        import->imported_names[i] = xstrdup(names[i]);
+    }
+    import->name_count = name_count;
+    import->file_path = xstrdup(file_path);
+    import->location = location;
+    return import;
+}
+
+void ast_import_free_contents(ASTImportStatement* import) {
+    if (!import) return;
+    for (int i = 0; i < import->name_count; i++) {
+        xfree(import->imported_names[i]);
+    }
+    xfree(import->imported_names);
+    xfree(import->file_path);
+}
+
+void ast_import_free(ASTImportStatement* import) {
+    if (!import) return;
+    ast_import_free_contents(import);
+    xfree(import);
 }
 
 ASTFunctionDef* ast_function_create(const char* name, TypeNode return_type, SourceLocation location) {

@@ -7,6 +7,7 @@
 /* Forward declarations */
 typedef struct ASTNode ASTNode;
 typedef struct ASTProgram ASTProgram;
+typedef struct ASTImportStatement ASTImportStatement;
 typedef struct ASTFunctionDef ASTFunctionDef;
 typedef struct ASTVarDecl ASTVarDecl;
 typedef struct ASTParameter ASTParameter;
@@ -252,8 +253,18 @@ struct ASTFunctionDef {
     SourceLocation location;
 };
 
+/* Import statement */
+struct ASTImportStatement {
+    char** imported_names;     /* Array of function names to import, e.g., ["add", "multiply"] */
+    int name_count;            /* Number of imported names */
+    char* file_path;           /* e.g., "./math.csm" */
+    SourceLocation location;
+};
+
 /* Top-level program */
 struct ASTProgram {
+    ASTImportStatement* imports;
+    int import_count;
     ASTFunctionDef* functions;
     int function_count;
 };
@@ -261,6 +272,10 @@ struct ASTProgram {
 /* Constructor/destructor helpers */
 ASTProgram* ast_program_create(void);
 void ast_program_free(ASTProgram* program);
+
+ASTImportStatement* ast_import_create(char** names, int name_count, const char* file_path, SourceLocation location);
+void ast_import_free_contents(ASTImportStatement* import);
+void ast_import_free(ASTImportStatement* import);
 
 ASTFunctionDef* ast_function_create(const char* name, TypeNode return_type, SourceLocation location);
 void ast_function_free(ASTFunctionDef* func);

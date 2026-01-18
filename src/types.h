@@ -12,6 +12,7 @@ typedef struct VariableSymbol VariableSymbol;
 /* Function symbol - stores function metadata */
 struct FunctionSymbol {
     char* name;
+    char* module_name;       /* Module alias if imported, NULL for local */
     CasmType return_type;
     CasmType* param_types;
     int param_count;
@@ -50,6 +51,13 @@ void symbol_table_free(SymbolTable* table);
 int symbol_table_add_function(SymbolTable* table, const char* name, CasmType return_type,
                                CasmType* param_types, int param_count, SourceLocation location);
 FunctionSymbol* symbol_table_lookup_function(SymbolTable* table, const char* name);
+
+/* Helper to extract module and function names from qualified name (e.g., "math:add")
+ * Returns module_name and function_name via pointers (both allocated)
+ * If no colon, module_name is NULL and function_name is the whole string
+ * Caller must free both strings
+ */
+void parse_qualified_name(const char* qualified_name, char** out_module, char** out_function);
 
 /* Variable operations */
 int symbol_table_add_variable(SymbolTable* table, const char* name, CasmType type, SourceLocation location);

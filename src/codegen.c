@@ -24,6 +24,17 @@ static const char* casm_type_to_c_type(CasmType type) {
     }
 }
 
+/* Helper: Convert qualified name to mangled name (module:name -> module_name) */
+static char* mangle_function_name(const char* qualified_name) {
+    char* mangled = xstrdup(qualified_name);
+    for (int i = 0; mangled[i]; i++) {
+        if (mangled[i] == ':') {
+            mangled[i] = '_';
+        }
+    }
+    return mangled;
+}
+
 /* Helper: Check if expression is a function call */
 static int is_function_call(ASTExpression* expr) {
     return expr && expr->type == EXPR_FUNCTION_CALL;
@@ -126,7 +137,9 @@ static void emit_expression(FILE* out, ASTExpression* expr) {
         }
         
         case EXPR_FUNCTION_CALL: {
-            fprintf(out, "%s(", expr->as.function_call.function_name);
+            char* mangled_name = mangle_function_name(expr->as.function_call.function_name);
+            fprintf(out, "%s(", mangled_name);
+            xfree(mangled_name);
             for (int i = 0; i < expr->as.function_call.argument_count; i++) {
                 if (i > 0) fprintf(out, ", ");
                 /* Parenthesize assignment sub-expressions in function arguments */
@@ -374,10 +387,11 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
 static void emit_function_declarations(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
+        char* mangled_name = mangle_function_name(func->name);
         
         fprintf(out, "%s %s(",
                 casm_type_to_c_type(func->return_type.type),
-                func->name);
+                mangled_name);
         
         if (func->parameter_count == 0) {
             fprintf(out, "void");
@@ -391,6 +405,7 @@ static void emit_function_declarations(FILE* out, ASTProgram* program) {
         }
         
         fprintf(out, ");\n");
+        xfree(mangled_name);
     }
     fprintf(out, "\n");
 }
@@ -399,10 +414,11 @@ static void emit_function_declarations(FILE* out, ASTProgram* program) {
 static void emit_function_definitions(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
+        char* mangled_name = mangle_function_name(func->name);
         
         fprintf(out, "%s %s(",
                 casm_type_to_c_type(func->return_type.type),
-                func->name);
+                mangled_name);
         
         if (func->parameter_count == 0) {
             fprintf(out, "void");
@@ -422,6 +438,8 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
         if (i < program->function_count - 1) {
             fprintf(out, "\n");
         }
+        
+        xfree(mangled_name);
     }
 }
 

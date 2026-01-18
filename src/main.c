@@ -6,6 +6,7 @@
 #include "semantics.h"
 #include "codegen.h"
 #include "codegen_wat.h"
+#include "module_loader.h"
 #include "utils.h"
 
 static char* read_file(const char* filename) {
@@ -65,16 +66,32 @@ int main(int argc, char** argv) {
     }
     
     char* source = read_file(source_file);
-    Parser* parser = parser_create(source);
     
-    ASTProgram* program = parser_parse(parser);
+    /* Try to load with module system first (handles imports) */
+    char* error_msg = NULL;
+    ASTProgram* program = build_complete_ast(source_file, &error_msg);
     
-    if (parser->errors->error_count > 0) {
-        error_list_print(parser->errors, source_file);
-        ast_program_free(program);
-        parser_free(parser);
+    if (!program) {
+        if (error_msg) {
+            fprintf(stderr, "Error: %s\n", error_msg);
+            xfree(error_msg);
+        } else {
+            fprintf(stderr, "Error: Failed to build AST\n");
+        }
         xfree(source);
         return 1;
+    }
+    
+    /* If the program has no imports, we still need to do basic semantic checking */
+    if (program->import_count == 0) {
+        /* No imports - verify the local file parsed correctly */
+        Parser* parser = parser_create(source);
+        if (parser->errors->error_count > 0) {
+            error_list_print(parser->errors, source_file);
+            ast_program_free_merged(program);
+            xfree(source);
+            return 1;
+        }
     }
     
     /* Semantic analysis */
@@ -85,8 +102,7 @@ int main(int argc, char** argv) {
         semantic_error_list_print(sem_errors, source_file);
         semantic_error_list_free(sem_errors);
         symbol_table_free(table);
-        ast_program_free(program);
-        parser_free(parser);
+        ast_program_free_merged(program);
         xfree(source);
         return 1;
     }
@@ -106,8 +122,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Error: Could not open output file '%s' for writing\n", output_file);
             semantic_error_list_free(sem_errors);
             symbol_table_free(table);
-            ast_program_free(program);
-            parser_free(parser);
+            ast_program_free_merged(program);
             xfree(source);
             return 1;
         }
@@ -119,8 +134,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Error: Code generation failed: %s\n", result.error_msg);
             semantic_error_list_free(sem_errors);
             symbol_table_free(table);
-            ast_program_free(program);
-            parser_free(parser);
+            ast_program_free_merged(program);
             xfree(source);
             return 1;
         }
@@ -140,8 +154,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Error: Could not open output file '%s' for writing\n", output_file);
             semantic_error_list_free(sem_errors);
             symbol_table_free(table);
-            ast_program_free(program);
-            parser_free(parser);
+            ast_program_free_merged(program);
             xfree(source);
             return 1;
         }
@@ -153,8 +166,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Error: WAT code generation failed: %s\n", result.error_msg);
             semantic_error_list_free(sem_errors);
             symbol_table_free(table);
-            ast_program_free(program);
-            parser_free(parser);
+            ast_program_free_merged(program);
             xfree(source);
             return 1;
         }
@@ -164,8 +176,7 @@ int main(int argc, char** argv) {
     
     semantic_error_list_free(sem_errors);
     symbol_table_free(table);
-    ast_program_free(program);
-    parser_free(parser);
+    ast_program_free_merged(program);
     xfree(source);
     return 0;
 }

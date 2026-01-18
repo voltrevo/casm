@@ -160,6 +160,7 @@ static Token scan_identifier(Lexer* lexer) {
             else if (strncmp(text, "void", 4) == 0) type = TOK_VOID;
             else if (strncmp(text, "else", 4) == 0) type = TOK_ELSE;
             else if (strncmp(text, "true", 4) == 0) type = TOK_TRUE;
+            else if (strncmp(text, "from", 4) == 0) type = TOK_FROM;
             break;
         case 5:
             if (strncmp(text, "while", 5) == 0) type = TOK_WHILE;
@@ -178,6 +179,42 @@ static Token scan_identifier(Lexer* lexer) {
     return token;
 }
 
+static Token scan_string(Lexer* lexer) {
+    int start = lexer->current - 1;  /* Position of opening quote */
+    int start_col = lexer->column - 1;
+    int line = lexer->line;
+    
+    /* Scan until closing quote or end of line */
+    while (!is_at_end(lexer) && peek(lexer) != '"' && peek(lexer) != '\n') {
+        /* Handle escape sequences */
+        if (peek(lexer) == '\\') {
+            advance(lexer);  /* Skip backslash */
+            if (!is_at_end(lexer)) {
+                advance(lexer);  /* Skip escaped character */
+            }
+        } else {
+            advance(lexer);
+        }
+    }
+    
+    if (is_at_end(lexer) || peek(lexer) == '\n') {
+        /* Unterminated string */
+        Token token = make_token(lexer, TOK_ERROR, start, lexer->current - start);
+        token.location.line = line;
+        token.location.column = start_col;
+        return token;
+    }
+    
+    /* Skip closing quote */
+    advance(lexer);
+    
+    int length = lexer->current - start;
+    Token token = make_token(lexer, TOK_STRING, start, length);
+    token.location.line = line;
+    token.location.column = start_col;
+    return token;
+}
+
 static Token next_token_impl(Lexer* lexer) {
     skip_whitespace(lexer);
     
@@ -191,7 +228,7 @@ static Token next_token_impl(Lexer* lexer) {
     
     char c = advance(lexer);
     
-    /* Single character tokens */
+     /* Single character tokens */
     switch (c) {
         case '(': return make_token(lexer, TOK_LPAREN, start, 1);
         case ')': return make_token(lexer, TOK_RPAREN, start, 1);
@@ -204,6 +241,9 @@ static Token next_token_impl(Lexer* lexer) {
         case '*': return make_token(lexer, TOK_STAR, start, 1);
         case '/': return make_token(lexer, TOK_SLASH, start, 1);
         case '%': return make_token(lexer, TOK_PERCENT, start, 1);
+        case '#': return make_token(lexer, TOK_HASH, start, 1);
+        case ':': return make_token(lexer, TOK_COLON, start, 1);
+        case '"': return scan_string(lexer);
     }
     
     /* Multi-character operators */
@@ -333,7 +373,11 @@ const char* token_type_name(TokenType type) {
         case TOK_DBG: return "DBG";
         case TOK_TRUE: return "TRUE";
         case TOK_FALSE: return "FALSE";
-        case TOK_IMPORT: return "IMPORT";
+         case TOK_IMPORT: return "IMPORT";
+        case TOK_FROM: return "FROM";
+        case TOK_HASH: return "HASH";
+        case TOK_COLON: return "COLON";
+        case TOK_STRING: return "STRING";
         case TOK_PLUS: return "PLUS";
         case TOK_MINUS: return "MINUS";
         case TOK_STAR: return "STAR";
