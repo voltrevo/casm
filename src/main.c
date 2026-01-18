@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         
-        CodegenResult result = codegen_program(program, out);
+        CodegenResult result = codegen_program(program, out, source_file);
         fclose(out);
         
         if (!result.success) {

@@ -1,0 +1,5 @@
+// Test that dbg with undefined variable causes compilation error
+i32 main() {
+    dbg(undefined_var);
+    return 0;
+}

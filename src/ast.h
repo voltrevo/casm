@@ -20,6 +20,7 @@ typedef struct ASTIfStmt ASTIfStmt;
 typedef struct ASTWhileStmt ASTWhileStmt;
 typedef struct ASTForStmt ASTForStmt;
 typedef struct ASTBlockStmt ASTBlockStmt;
+typedef struct ASTDbgStmt ASTDbgStmt;
 typedef struct ASTElseIfClause ASTElseIfClause;
 typedef struct ASTBinaryOp ASTBinaryOp;
 typedef struct ASTUnaryOp ASTUnaryOp;
@@ -73,6 +74,7 @@ typedef enum {
     STMT_WHILE,
     STMT_FOR,
     STMT_BLOCK,
+    STMT_DBG,
 } StatementType;
 
 struct ASTReturnStmt {
@@ -134,6 +136,14 @@ struct ASTBlockStmt {
     SourceLocation location;
 };
 
+/* Debug statement: dbg(expr1, expr2, ...) */
+struct ASTDbgStmt {
+    char** arg_names;         /* Source text of each argument (e.g., "x", "x + 1") */
+    ASTExpression* arguments; /* Evaluated expressions */
+    int argument_count;
+    SourceLocation location;  /* Location of dbg() call */
+};
+
 struct ASTStatement {
     StatementType type;
     SourceLocation location;
@@ -145,6 +155,7 @@ struct ASTStatement {
         ASTWhileStmt while_stmt;
         ASTForStmt for_stmt;
         ASTBlockStmt block_stmt;
+        ASTDbgStmt dbg_stmt;
     } as;
 };
 

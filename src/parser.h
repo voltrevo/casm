@@ -28,6 +28,7 @@ typedef struct {
     int token_count;
     int current;
     ErrorList* errors;
+    const char* source;  /* Keep reference to source for extracting text */
 } Parser;
 
 /* Parser API */

@@ -12,6 +12,6 @@ typedef struct {
 } CodegenResult;
 
 /* Generate C code from AST and write to file */
-CodegenResult codegen_program(ASTProgram* program, FILE* output);
+CodegenResult codegen_program(ASTProgram* program, FILE* output, const char* source_filename);
 
 #endif /* CODEGEN_H */

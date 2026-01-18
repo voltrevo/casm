@@ -115,14 +115,33 @@ for example in "${SUPPORTED_EXAMPLES[@]}"; do
     fi
 done
 
+# Run dbg tests with timeout
+echo ""
+echo "Running dbg tests (timeout: 2s per test)..."
+if timeout 30 tests/run_dbg_tests.sh > /tmp/dbg_test_output.txt 2>&1; then
+    DBG_TEST_RESULT="PASSED"
+    echo "✓ DBG tests passed"
+else
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+        echo "✗ DBG tests timed out"
+        DBG_TEST_RESULT="FAILED"
+    else
+        echo "✗ DBG tests failed"
+        DBG_TEST_RESULT="FAILED"
+        cat /tmp/dbg_test_output.txt
+    fi
+fi
+
 echo ""
 echo "=========================================="
 echo "Test Results:"
 echo "  Unit tests: PASSED"
 echo "  Examples: $EXAMPLES_PASSED passed, $EXAMPLES_FAILED failed"
+echo "  DBG tests: $DBG_TEST_RESULT"
 echo "=========================================="
 
-if [ $EXAMPLES_FAILED -gt 0 ]; then
+if [ $EXAMPLES_FAILED -gt 0 ] || [ "$DBG_TEST_RESULT" = "FAILED" ]; then
     exit 1
 fi
 

@@ -1,0 +1,10 @@
+// Test dbg with different types
+i32 main() {
+    i32 a = 5;
+    bool b = true;
+    bool c = false;
+    dbg(a);
+    dbg(b);
+    dbg(c);
+    return 0;
+}

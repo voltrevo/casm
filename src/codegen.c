@@ -4,6 +4,9 @@
 #include "codegen.h"
 #include "utils.h"
 
+/* Global variable to track source filename for dbg output */
+static const char* g_source_filename = "unknown.csm";
+
 /* Helper: Map CASM type to C type string */
 static const char* casm_type_to_c_type(CasmType type) {
     switch (type) {
@@ -271,6 +274,43 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
             fprintf(out, "}\n");
             break;
         }
+        
+        case STMT_DBG: {
+            ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
+            for (int i = 0; i < dbg->argument_count; i++) {
+                print_indent(out, indent);
+                fprintf(out, "_casm_dbg_");
+                
+                /* Use the type of the expression to determine the format specifier */
+                CasmType arg_type = dbg->arguments[i].resolved_type;
+                switch (arg_type) {
+                    case TYPE_I8:
+                    case TYPE_I16:
+                    case TYPE_I32: fprintf(out, "i32(\""); break;
+                    case TYPE_I64: fprintf(out, "i64(\""); break;
+                    case TYPE_U8:
+                    case TYPE_U16:
+                    case TYPE_U32: fprintf(out, "u32(\""); break;
+                    case TYPE_U64: fprintf(out, "u64(\""); break;
+                    case TYPE_BOOL: fprintf(out, "bool(\""); break;
+                    default: fprintf(out, "i32(\""); break;
+                }
+                
+                /* Emit location info: file:line:col: argname = */
+                fprintf(out, "%s:%d:%d: ", g_source_filename, dbg->location.line, dbg->location.column);
+                if (dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0) {
+                    fprintf(out, "%s = ", dbg->arg_names[i]);
+                } else {
+                    /* Fallback: just use generic label */
+                    fprintf(out, "arg%d = ", i);
+                }
+                fprintf(out, "\", ");
+                
+                emit_expression(out, &dbg->arguments[i]);
+                fprintf(out, ");\n");
+            }
+            break;
+        }
     }
 }
 
@@ -330,7 +370,7 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
 }
 
 /* Main code generation function */
-CodegenResult codegen_program(ASTProgram* program, FILE* output) {
+CodegenResult codegen_program(ASTProgram* program, FILE* output, const char* source_filename) {
     if (!program || !output) {
         CodegenResult result;
         result.success = 0;
@@ -338,9 +378,32 @@ CodegenResult codegen_program(ASTProgram* program, FILE* output) {
         return result;
     }
     
+    /* Store filename for use in dbg output */
+    g_source_filename = source_filename ? source_filename : "unknown.csm";
+    
     /* Emit includes */
     fprintf(output, "#include <stdint.h>\n");
     fprintf(output, "#include <stdbool.h>\n");
+    fprintf(output, "#include <stdio.h>\n");
+    fprintf(output, "\n");
+    
+    /* Emit debug helper functions */
+    fprintf(output, "/* Debug helper functions */\n");
+    fprintf(output, "static void __attribute__((unused)) _casm_dbg_i32(const char* label, int32_t value) {\n");
+    fprintf(output, "    printf(\"%%s%%d\\n\", label, value);\n");
+    fprintf(output, "}\n");
+    fprintf(output, "static void __attribute__((unused)) _casm_dbg_i64(const char* label, int64_t value) {\n");
+    fprintf(output, "    printf(\"%%s%%lld\\n\", label, (long long)value);\n");
+    fprintf(output, "}\n");
+    fprintf(output, "static void __attribute__((unused)) _casm_dbg_u32(const char* label, uint32_t value) {\n");
+    fprintf(output, "    printf(\"%%s%%u\\n\", label, value);\n");
+    fprintf(output, "}\n");
+    fprintf(output, "static void __attribute__((unused)) _casm_dbg_u64(const char* label, uint64_t value) {\n");
+    fprintf(output, "    printf(\"%%s%%llu\\n\", label, (unsigned long long)value);\n");
+    fprintf(output, "}\n");
+    fprintf(output, "static void __attribute__((unused)) _casm_dbg_bool(const char* label, _Bool value) {\n");
+    fprintf(output, "    printf(\"%%s%%s\\n\", label, value ? \"true\" : \"false\");\n");
+    fprintf(output, "}\n");
     fprintf(output, "\n");
     
     /* Emit function declarations */

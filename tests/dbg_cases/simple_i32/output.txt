@@ -1,0 +1,1 @@
+tests/dbg_cases/simple_i32/test.csm:4:4: x = 5

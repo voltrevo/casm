@@ -44,6 +44,8 @@ void error_list_print(ErrorList* errors, const char* filename) {
 Parser* parser_create(const char* source) {
     Parser* parser = xmalloc(sizeof(Parser));
     
+    parser->source = source;  /* Store source for later reference */
+    
     /* Tokenize the entire source */
     Lexer* lexer = lexer_create(source);
     int capacity = 100;
@@ -744,6 +746,78 @@ static ASTStatement* parse_for_statement(Parser* parser) {
     return stmt;
 }
 
+/* Parse a dbg statement: dbg(expr1, expr2, ...) */
+static ASTStatement* parse_dbg_statement(Parser* parser) {
+    SourceLocation location = current_token(parser).location;
+    advance(parser);  /* consume 'dbg' */
+    
+    if (!match(parser, TOK_LPAREN)) {
+        parser_error(parser, "Expected '(' after dbg");
+        return NULL;
+    }
+    
+    /* Parse arguments */
+    char** arg_names = xmalloc(sizeof(char*) * 32);  /* Max 32 arguments */
+    ASTExpression* arguments = xmalloc(sizeof(ASTExpression) * 32);
+    int argument_count = 0;
+    
+    while (!check(parser, TOK_RPAREN) && argument_count < 32) {
+        /* Parse expression */
+        ASTExpression* expr = parse_expression(parser);
+        if (!expr) {
+            parser_error(parser, "Expected expression in dbg");
+            xfree(arg_names);
+            xfree(arguments);
+            return NULL;
+        }
+        
+        /* Extract argument name: if it's a simple variable, use the variable name */
+        char* arg_name = NULL;
+        if (expr->type == EXPR_VARIABLE) {
+            arg_name = xstrdup(expr->as.variable.name);
+        } else {
+            /* For complex expressions, we'd need to extract from source */
+            /* For now, use empty string */
+            arg_name = xstrdup("");
+        }
+        arg_names[argument_count] = arg_name;
+        arguments[argument_count] = *expr;
+        xfree(expr);
+        argument_count++;
+        
+        if (!check(parser, TOK_RPAREN)) {
+            if (!match(parser, TOK_COMMA)) {
+                parser_error(parser, "Expected ',' or ')' in dbg");
+                xfree(arg_names);
+                xfree(arguments);
+                return NULL;
+            }
+        }
+    }
+    
+    if (!match(parser, TOK_RPAREN)) {
+        parser_error(parser, "Expected ')' after dbg arguments");
+        xfree(arg_names);
+        xfree(arguments);
+        return NULL;
+    }
+    
+    if (!match(parser, TOK_SEMICOLON)) {
+        parser_error(parser, "Expected ';' after dbg statement");
+        xfree(arg_names);
+        xfree(arguments);
+        return NULL;
+    }
+    
+    ASTStatement* stmt = ast_statement_create(STMT_DBG, location);
+    stmt->as.dbg_stmt.arg_names = arg_names;
+    stmt->as.dbg_stmt.arguments = arguments;
+    stmt->as.dbg_stmt.argument_count = argument_count;
+    stmt->as.dbg_stmt.location = location;
+    
+    return stmt;
+}
+
 /* Parse a statement - caller must free returned statement */
 static ASTStatement* parse_statement(Parser* parser) {
     Token token = current_token(parser);
@@ -780,6 +854,11 @@ static ASTStatement* parse_statement(Parser* parser) {
     
     if (token.type == TOK_FOR) {
         return parse_for_statement(parser);
+    }
+    
+    /* Debug statement */
+    if (token.type == TOK_DBG) {
+        return parse_dbg_statement(parser);
     }
     
     /* Bare block statement */

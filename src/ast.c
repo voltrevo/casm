@@ -161,6 +161,16 @@ static void ast_statement_free_contents(ASTStatement* stmt) {
         case STMT_BLOCK:
             ast_block_free(&stmt->as.block_stmt.block);
             break;
+        case STMT_DBG: {
+            ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
+            for (int i = 0; i < dbg->argument_count; i++) {
+                ast_expression_free_contents(&dbg->arguments[i]);
+                xfree(dbg->arg_names[i]);
+            }
+            xfree(dbg->arguments);
+            xfree(dbg->arg_names);
+            break;
+        }
     }
 }
 

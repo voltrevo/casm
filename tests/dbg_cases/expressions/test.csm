@@ -1,0 +1,8 @@
+// Test dbg with expressions (currently shows arg0, arg1, etc for complex exprs)
+i32 main() {
+    i32 x = 5;
+    i32 y = 3;
+    dbg(x + y);
+    dbg(x * y);
+    return 0;
+}

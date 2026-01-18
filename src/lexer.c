@@ -144,13 +144,16 @@ static Token scan_identifier(Lexer* lexer) {
             else if (strncmp(text, "if", 2) == 0) type = TOK_IF;
             break;
         case 3:
-            if (strncmp(text, "i16", 3) == 0) type = TOK_I16;
-            else if (strncmp(text, "i32", 3) == 0) type = TOK_I32;
+            if (strncmp(text, "i32", 3) == 0) type = TOK_I32;
             else if (strncmp(text, "i64", 3) == 0) type = TOK_I64;
+            else if (strncmp(text, "i16", 3) == 0) type = TOK_I16;
+            else if (strncmp(text, "i8", 2) == 0) type = TOK_I8;
+            else if (strncmp(text, "u8", 2) == 0) type = TOK_U8;
             else if (strncmp(text, "u16", 3) == 0) type = TOK_U16;
             else if (strncmp(text, "u32", 3) == 0) type = TOK_U32;
             else if (strncmp(text, "u64", 3) == 0) type = TOK_U64;
             else if (strncmp(text, "for", 3) == 0) type = TOK_FOR;
+            else if (strncmp(text, "dbg", 3) == 0) type = TOK_DBG;
             break;
         case 4:
             if (strncmp(text, "bool", 4) == 0) type = TOK_BOOL;
@@ -327,6 +330,7 @@ const char* token_type_name(TokenType type) {
         case TOK_WHILE: return "WHILE";
         case TOK_FOR: return "FOR";
         case TOK_RETURN: return "RETURN";
+        case TOK_DBG: return "DBG";
         case TOK_TRUE: return "TRUE";
         case TOK_FALSE: return "FALSE";
         case TOK_IMPORT: return "IMPORT";

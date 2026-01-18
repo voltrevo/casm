@@ -416,6 +416,12 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
             }
             break;
         }
+        
+        case STMT_DBG: {
+            /* WAT dbg support - not yet implemented */
+            /* For now, skip debug output in WAT */
+            break;
+        }
     }
 }
 

@@ -26,7 +26,7 @@ static char* generate_c_from_source(const char* src) {
         return NULL;
     }
 
-    CodegenResult r = codegen_program(prog, f);
+    CodegenResult r = codegen_program(prog, f, "test.csm");
     
     if (!r.success) {
         fclose(f);

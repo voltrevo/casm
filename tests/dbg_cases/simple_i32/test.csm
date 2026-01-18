@@ -1,0 +1,6 @@
+// Simple dbg test with single i32 value
+i32 main() {
+    i32 x = 5;
+    dbg(x);
+    return 0;
+}

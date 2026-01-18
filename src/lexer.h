@@ -21,12 +21,15 @@ typedef enum {
     TOK_BOOL,
     TOK_VOID,
     
-    /* Keywords - Control Flow */
+     /* Keywords - Control Flow */
     TOK_IF,
     TOK_ELSE,
     TOK_WHILE,
     TOK_FOR,
     TOK_RETURN,
+    
+    /* Keywords - Debug */
+    TOK_DBG,
     
     /* Keywords - Literals */
     TOK_TRUE,
