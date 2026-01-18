@@ -1,5 +1,6 @@
 # Compiled executable
 casm
+test_casm
 
 # Object files
 *.o
