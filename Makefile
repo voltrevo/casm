@@ -1,7 +1,18 @@
-.PHONY: all clean test build
+.PHONY: all clean test build build-release build-debug test help run-example
 
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -std=c99 -g -I./src
+
+# Debug flags: sanitizers enabled
+CFLAGS_DEBUG = -Wall -Wextra -pedantic -std=c99 -g \
+	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer \
+	-I./src
+
+# Release flags: optimized, no sanitizers
+CFLAGS_RELEASE = -Wall -Wextra -pedantic -std=c99 -O3 -I./src
+
+# Default to debug
+CFLAGS = $(CFLAGS_DEBUG)
+
 LDFLAGS = -lm
 
 # Source files
@@ -14,26 +25,30 @@ TEST_BINARY = test_casm
 
 all: build
 
-build: $(MAIN_BINARY)
+build: build-debug
 
-$(MAIN_BINARY): $(SOURCES)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+build-debug: $(SOURCES)
+	$(CC) $(CFLAGS_DEBUG) -o $(MAIN_BINARY) $^ $(LDFLAGS)
 
-test: $(TEST_BINARY)
+build-release: $(SOURCES)
+	$(CC) $(CFLAGS_RELEASE) -o $(MAIN_BINARY) $^ $(LDFLAGS)
+
+test: 
+	$(CC) $(CFLAGS_DEBUG) -o $(TEST_BINARY) $(TEST_SOURCES) $(LDFLAGS)
 	./$(TEST_BINARY)
-
-$(TEST_BINARY): $(TEST_SOURCES)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f $(MAIN_BINARY) $(TEST_BINARY)
 
 run-example: build
-	./$(MAIN_BINARY) examples/simple.c
+	./$(MAIN_BINARY) examples/simple_add.csm
 
 help:
 	@echo "Available targets:"
-	@echo "  build       - Build the compiler"
-	@echo "  test        - Run tests"
-	@echo "  clean       - Remove built files"
-	@echo "  run-example - Compile and run an example"
+	@echo "  build           - Build the compiler (debug with sanitizers)"
+	@echo "  build-debug     - Build debug version with sanitizers"
+	@echo "  build-release   - Build optimized release version"
+	@echo "  test            - Run unit tests"
+	@echo "  clean           - Remove built files"
+	@echo "  run-example     - Compile and run an example"
+	@echo "  help            - Show this help message"

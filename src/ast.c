@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Forward declaration */
+static void ast_statement_free_contents(ASTStatement* stmt);
+static void ast_expression_free_contents(ASTExpression* expr);
+
 const char* type_to_string(CasmType type) {
     switch (type) {
         case TYPE_I8: return "i8";
@@ -83,7 +87,8 @@ ASTBlock* ast_block_create(void) {
 void ast_block_free(ASTBlock* block) {
     if (!block) return;
     for (int i = 0; i < block->statement_count; i++) {
-        ast_statement_free(&block->statements[i]);
+        /* Free statement contents only, not the statement itself (it's embedded in the array) */
+        ast_statement_free_contents(&block->statements[i]);
     }
     xfree(block->statements);
 }
@@ -102,6 +107,13 @@ ASTStatement* ast_statement_create(StatementType type, SourceLocation location) 
 }
 
 void ast_statement_free(ASTStatement* stmt) {
+    if (!stmt) return;
+    ast_statement_free_contents(stmt);
+    xfree(stmt);
+}
+
+/* Free statement contents only (for embedded statements in arrays) */
+static void ast_statement_free_contents(ASTStatement* stmt) {
     if (!stmt) return;
     
     switch (stmt->type) {
@@ -122,8 +134,6 @@ void ast_statement_free(ASTStatement* stmt) {
             xfree(stmt->as.var_decl_stmt.var_decl.name);
             break;
     }
-    
-    xfree(stmt);
 }
 
 ASTExpression* ast_expression_create(ExpressionType type, SourceLocation location) {
@@ -134,6 +144,13 @@ ASTExpression* ast_expression_create(ExpressionType type, SourceLocation locatio
 }
 
 void ast_expression_free(ASTExpression* expr) {
+    if (!expr) return;
+    ast_expression_free_contents(expr);
+    xfree(expr);
+}
+
+/* Free expression contents only (for embedded expressions in arrays) */
+static void ast_expression_free_contents(ASTExpression* expr) {
     if (!expr) return;
     
     switch (expr->type) {
@@ -147,7 +164,8 @@ void ast_expression_free(ASTExpression* expr) {
         case EXPR_FUNCTION_CALL:
             xfree(expr->as.function_call.function_name);
             for (int i = 0; i < expr->as.function_call.argument_count; i++) {
-                ast_expression_free(&expr->as.function_call.arguments[i]);
+                /* Arguments are embedded in array, so free contents only */
+                ast_expression_free_contents(&expr->as.function_call.arguments[i]);
             }
             xfree(expr->as.function_call.arguments);
             break;
@@ -158,8 +176,6 @@ void ast_expression_free(ASTExpression* expr) {
             /* Literals have no sub-allocations */
             break;
     }
-    
-    xfree(expr);
 }
 
 ASTParameter* ast_parameter_create(const char* name, TypeNode type, SourceLocation location) {

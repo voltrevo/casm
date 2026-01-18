@@ -132,8 +132,7 @@ int main(int argc, char** argv) {
     
     print_ast_program(program);
     
-    /* DEBUG: Skip freeing for now to find the issue */
-    /* ast_program_free(program); */
+    ast_program_free(program);
     parser_free(parser);
     xfree(source);
     return 0;
