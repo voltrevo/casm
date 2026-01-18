@@ -290,12 +290,6 @@ Token lexer_next_token(Lexer* lexer) {
     return lexer->current_token;
 }
 
-Token lexer_peek_token(Lexer* lexer) {
-    /* This is a simple peek that doesn't handle multiple peeks properly */
-    /* For now, we'll just return the current token */
-    return lexer->current_token;
-}
-
 const char* token_type_name(TokenType type) {
     switch (type) {
         case TOK_INT_LITERAL: return "INT_LITERAL";

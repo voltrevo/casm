@@ -1,0 +1,6 @@
+// Issue #7: Inconsistent Memory Deallocation (src/parser.c:854)
+// One place in parser.c uses bare free(stmt) instead of xfree(stmt).
+// This is a maintainability issue - if error handling is added to xfree(),
+// this one spot will be missed.
+// This cannot be triggered by a program - it's purely a code quality issue.
+// To verify: grep for "free(stmt)" in src/parser.c

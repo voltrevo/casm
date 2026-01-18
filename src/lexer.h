@@ -91,7 +91,6 @@ Lexer* lexer_create(const char* source);
 void lexer_free(Lexer* lexer);
 
 Token lexer_next_token(Lexer* lexer);
-Token lexer_peek_token(Lexer* lexer);
 
 const char* token_type_name(TokenType type);
 

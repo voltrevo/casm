@@ -1,0 +1,15 @@
+// Issue #8: Missing Statement Type for Bare Blocks
+// The statement type enumeration doesn't have STMT_BLOCK.
+// Bare blocks { } cannot be parsed.
+// This is the same issue as #3 - attempting to parse bare blocks
+// causes an infinite loop because there's no way to represent them.
+// See issue_3_infinite_loop_bare_blocks.csm
+
+i32 main() {
+    {
+        {
+            i32 x = 5;
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,10 @@
+// Issue #5: No Uninitialized Variable Detection
+// Variables can be declared without initialization and used immediately.
+// The semantic analyzer never tracks which variables have been initialized.
+// This allows undefined behavior (reading garbage memory).
+// The compiler should error on use of uninitialized variables.
+
+i32 main() {
+    i32 x;
+    return x;
+}

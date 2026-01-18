@@ -1,0 +1,11 @@
+// Issue #3: Infinite Loop - Unsupported Bare Blocks
+// The parser cannot handle bare blocks { } as nested statements.
+// When parse_statement() encounters a bare block, it returns NULL.
+// The while loop in parse_block() doesn't advance the token position,
+// causing an infinite loop at the same { token.
+// This will hang the compiler indefinitely.
+
+i32 main() {
+    { }
+    return 0;
+}

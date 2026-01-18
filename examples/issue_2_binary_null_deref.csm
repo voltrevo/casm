@@ -1,0 +1,10 @@
+// Issue #2: NULL Pointer Dereference in Binary Expression Parsing
+// The left operand is not explicitly checked for NULL before use.
+// However, parse_primary() already calls parser_error(), so the NULL case
+// is handled via error recovery (returns NULL which triggers further error checks).
+// Very hard to trigger an actual crash - error handling catches it.
+
+i32 main() {
+    i32 x = 5;
+    return x;
+}

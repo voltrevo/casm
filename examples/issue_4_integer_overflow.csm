@@ -1,0 +1,10 @@
+// Issue #4: Silent Integer Overflow Truncation
+// The lexer uses sscanf() with no overflow detection.
+// Large numbers that exceed LLONG_MAX are silently clamped or corrupted.
+// No error or warning is issued to the user.
+// This program should fail or warn about the overflow, but it doesn't.
+
+i32 main() {
+    i32 x = 9999999999999999999;
+    return x;
+}
