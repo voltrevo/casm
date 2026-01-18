@@ -2,8 +2,11 @@
 # DBG test runner - tests the dbg() debugging feature
 # Each test case is a directory containing:
 #   test.csm - the source file to compile
-#   output.txt - expected combined stdout+stderr output
-#   (optional) compile_error - if present, test expects compilation to fail
+#   output.txt - expected output (stdout+stderr for both success and error cases)
+#
+# Tests can be either:
+#   1. Success case: compile succeeds and program output matches output.txt
+#   2. Error case: compile fails and error output matches output.txt
 
 set -e
 
@@ -52,30 +55,16 @@ for test_dir in tests/dbg_cases/*/; do
     generated_c="$temp_dir/generated.c"
     
     if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=c --output="$generated_c" "test.csm" > "$compile_output" 2>&1; then
-        if [ -f "compile_error" ]; then
-            # Expected compilation error - check if error output matches expected
-            expected_output=$(cat "output.txt")
-            actual_output=$(cat "$compile_output")
-            if [ "$expected_output" = "$actual_output" ]; then
-                echo "✓ (expected compile error)"
-                PASSED=$((PASSED + 1))
-            else
-                echo "✗ (compile error output mismatch)"
-                FAILED=$((FAILED + 1))
-            fi
+        # Compilation failed - check if output matches expected
+        expected_output=$(cat "output.txt")
+        actual_output=$(cat "$compile_output")
+        if [ "$expected_output" = "$actual_output" ]; then
+            echo "✓ (expected compile error)"
+            PASSED=$((PASSED + 1))
         else
-            # Unexpected compilation error
-            echo "✗ (compilation failed)"
+            echo "✗ (compile error output mismatch)"
             FAILED=$((FAILED + 1))
         fi
-        cd "$ORIG_DIR"
-        continue
-    fi
-    
-    # If compilation succeeded but error was expected, that's a failure
-    if [ -f "compile_error" ]; then
-        echo "✗ (expected compile error but succeeded)"
-        FAILED=$((FAILED + 1))
         cd "$ORIG_DIR"
         continue
     fi
