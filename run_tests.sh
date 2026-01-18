@@ -22,6 +22,11 @@ if [ ! -f "./bin/test_semantics" ]; then
     exit 1
 fi
 
+if [ ! -f "./bin/test_codegen" ]; then
+    echo "✗ bin/test_codegen binary not found. Run 'make build-debug' first."
+    exit 1
+fi
+
 if [ ! -f "./bin/casm" ]; then
     echo "✗ bin/casm binary not found. Run 'make build-debug' first."
     exit 1
@@ -55,6 +60,22 @@ else
         exit 1
     else
         echo "✗ Semantics tests failed"
+        exit 1
+    fi
+fi
+
+# Run codegen tests with timeout
+echo ""
+echo "Running codegen tests (timeout: ${UNIT_TEST_TIMEOUT}s)..."
+if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_codegen; then
+    echo "✓ Codegen tests passed"
+else
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+        echo "✗ Codegen tests timed out after ${UNIT_TEST_TIMEOUT}s"
+        exit 1
+    else
+        echo "✗ Codegen tests failed"
         exit 1
     fi
 fi

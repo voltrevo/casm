@@ -22,11 +22,13 @@ BIN_DIR = bin
 SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c
 TEST_SOURCES = tests/test_lexer.c src/lexer.c src/utils.c
 SEMANTICS_TEST_SOURCES = tests/test_semantics.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
+CODEGEN_TEST_SOURCES = tests/test_codegen.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c
 
 # Output
 MAIN_BINARY = $(BIN_DIR)/casm
 TEST_BINARY = $(BIN_DIR)/test_casm
 SEMANTICS_TEST_BINARY = $(BIN_DIR)/test_semantics
+CODEGEN_TEST_BINARY = $(BIN_DIR)/test_codegen
 
 all: build
 
@@ -38,7 +40,7 @@ build-debug: $(BIN_DIR) $(SOURCES)
 build-release: $(BIN_DIR) $(SOURCES)
 	$(CC) $(CFLAGS_RELEASE) -o $(MAIN_BINARY) $(SOURCES) $(LDFLAGS)
 
-test: build-debug $(TEST_BINARY) $(SEMANTICS_TEST_BINARY)
+test: build-debug $(TEST_BINARY) $(SEMANTICS_TEST_BINARY) $(CODEGEN_TEST_BINARY)
 	./run_tests.sh
 
 unit-test: $(TEST_BINARY)
@@ -46,6 +48,9 @@ unit-test: $(TEST_BINARY)
 
 semantics-test: $(SEMANTICS_TEST_BINARY)
 	./$(SEMANTICS_TEST_BINARY)
+
+codegen-test: $(CODEGEN_TEST_BINARY)
+	./$(CODEGEN_TEST_BINARY)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
@@ -55,6 +60,9 @@ $(TEST_BINARY): $(BIN_DIR) $(TEST_SOURCES)
 
 $(SEMANTICS_TEST_BINARY): $(BIN_DIR) $(SEMANTICS_TEST_SOURCES)
 	$(CC) $(CFLAGS_DEBUG) -o $(SEMANTICS_TEST_BINARY) $(SEMANTICS_TEST_SOURCES) $(LDFLAGS)
+
+$(CODEGEN_TEST_BINARY): $(BIN_DIR) $(CODEGEN_TEST_SOURCES)
+	$(CC) $(CFLAGS_DEBUG) -o $(CODEGEN_TEST_BINARY) $(CODEGEN_TEST_SOURCES) $(LDFLAGS)
 
 clean:
 	rm -rf $(BIN_DIR)

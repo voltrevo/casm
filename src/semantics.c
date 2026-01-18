@@ -121,9 +121,9 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
                     symbol_table_mark_initialized(table, expr->as.binary_op.left->as.variable.name);
                 }
                 
-                /* Assignment expression has the type of the right-hand side */
-                expr->resolved_type = right_type;
-                return right_type;
+                /* Assignment expression has the type of the left-hand side */
+                expr->resolved_type = left_type;
+                return left_type;
             }
             
             /* For other operators, analyze both sides normally */

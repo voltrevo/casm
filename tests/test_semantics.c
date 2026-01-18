@@ -369,6 +369,78 @@ static int test_logical_op_types(TestSuite* suite) {
     TEST_PASS;
 }
 
+/* Test: Assignment expression type is LHS */
+static int test_assignment_expression_type_is_lhs(TestSuite* suite) {
+    TEST_START("Assignment expression type is LHS");
+
+    const char* source =
+        "i64 main() {\n"
+        "  i32 x;\n"
+        "  i64 y;\n"
+        "  y = 123;\n"
+        "  return (x = y);\n"
+        "}\n";
+
+    Parser* parser = parser_create(source);
+    ASTProgram* program = parser_parse(parser);
+    ASSERT_EQ(parser->errors->error_count, 0, "Parsing should succeed");
+
+    SymbolTable* table = symbol_table_create();
+    SemanticErrorList* errors = semantic_error_list_create();
+
+    int ok = analyze_program(program, table, errors);
+    ASSERT_EQ(ok, 1, "Program should be semantically valid");
+    ASSERT_EQ(errors->error_count, 0, "Should have no semantic errors");
+
+    ASTFunctionDef* f = &program->functions[0];
+    ASTStatement* last = &f->body.statements[f->body.statement_count - 1];
+
+    ASSERT_EQ(last->type, STMT_RETURN, "Last statement should be return");
+    ASSERT_EQ(last->as.return_stmt.value->as.binary_op.op, BINOP_ASSIGN,
+              "Return value should be assignment");
+
+    /* Assignment expression should resolve to LHS type (x: i32) */
+    ASSERT_EQ(last->as.return_stmt.value->resolved_type, TYPE_I32,
+              "Assignment expr type should be LHS type (i32)");
+
+    semantic_error_list_free(errors);
+    symbol_table_free(table);
+    parser_free(parser);
+    ast_program_free(program);
+
+    TEST_PASS;
+}
+
+/* Test: Nested blocks with same variable names */
+static int test_nested_blocks_same_var_name(TestSuite* suite) {
+    TEST_START("Nested blocks with same variable names");
+
+    const char* source =
+        "i32 main() {\n"
+        "  { i32 x = 1; }\n"
+        "  { i32 x = 2; }\n"
+        "  return 0;\n"
+        "}\n";
+
+    Parser* parser = parser_create(source);
+    ASTProgram* program = parser_parse(parser);
+    ASSERT_EQ(parser->errors->error_count, 0, "Parsing should succeed");
+
+    SymbolTable* table = symbol_table_create();
+    SemanticErrorList* errors = semantic_error_list_create();
+
+    int ok = analyze_program(program, table, errors);
+    ASSERT_EQ(ok, 1, "Program should be semantically valid");
+    ASSERT_EQ(errors->error_count, 0, "Should have no semantic errors - blocks create separate scopes");
+
+    semantic_error_list_free(errors);
+    symbol_table_free(table);
+    parser_free(parser);
+    ast_program_free(program);
+
+    TEST_PASS;
+}
+
 /* Run all tests */
 int main(void) {
     TestSuite suite = {
@@ -399,6 +471,8 @@ int main(void) {
     test_duplicate_variable(&suite);
     test_binary_op_types(&suite);
     test_logical_op_types(&suite);
+    test_assignment_expression_type_is_lhs(&suite);
+    test_nested_blocks_same_var_name(&suite);
     
     printf("\n");
     printf("Passed: %d\n", suite.passed);

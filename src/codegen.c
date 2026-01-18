@@ -24,6 +24,20 @@ static const char* casm_type_to_c_type(CasmType type) {
 /* Helper: Emit expression to file */
 static void emit_expression(FILE* out, ASTExpression* expr);
 
+/* Helper: Emit expression that may need parentheses if it contains assignment */
+static void emit_expression_in_context(FILE* out, ASTExpression* expr, int needs_parens_for_assign) {
+    if (!expr) return;
+    
+    /* If this is an assignment and we're in a context that needs parentheses, wrap it */
+    if (needs_parens_for_assign && expr->type == EXPR_BINARY_OP && expr->as.binary_op.op == BINOP_ASSIGN) {
+        fprintf(out, "(");
+        emit_expression(out, expr);
+        fprintf(out, ")");
+    } else {
+        emit_expression(out, expr);
+    }
+}
+
 /* Helper: Print indent */
 static void print_indent(FILE* out, int indent) {
     for (int i = 0; i < indent; i++) {
@@ -86,9 +100,10 @@ static void emit_expression(FILE* out, ASTExpression* expr) {
                 emit_expression(out, expr->as.binary_op.right);
             } else {
                 fprintf(out, "(");
-                emit_expression(out, expr->as.binary_op.left);
+                /* Parenthesize assignment sub-expressions to preserve precedence */
+                emit_expression_in_context(out, expr->as.binary_op.left, 1);
                 fprintf(out, " %s ", binop_to_string(expr->as.binary_op.op));
-                emit_expression(out, expr->as.binary_op.right);
+                emit_expression_in_context(out, expr->as.binary_op.right, 1);
                 fprintf(out, ")");
             }
             break;
@@ -96,7 +111,8 @@ static void emit_expression(FILE* out, ASTExpression* expr) {
         
         case EXPR_UNARY_OP: {
             fprintf(out, "(%s", unop_to_string(expr->as.unary_op.op));
-            emit_expression(out, expr->as.unary_op.operand);
+            /* Parenthesize assignment sub-expressions */
+            emit_expression_in_context(out, expr->as.unary_op.operand, 1);
             fprintf(out, ")");
             break;
         }
@@ -105,7 +121,8 @@ static void emit_expression(FILE* out, ASTExpression* expr) {
             fprintf(out, "%s(", expr->as.function_call.function_name);
             for (int i = 0; i < expr->as.function_call.argument_count; i++) {
                 if (i > 0) fprintf(out, ", ");
-                emit_expression(out, &expr->as.function_call.arguments[i]);
+                /* Parenthesize assignment sub-expressions in function arguments */
+                emit_expression_in_context(out, &expr->as.function_call.arguments[i], 1);
             }
             fprintf(out, ")");
             break;
@@ -246,8 +263,12 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
         }
         
         case STMT_BLOCK: {
-            /* Emit nested block statements */
-            emit_block(out, &stmt->as.block_stmt.block, indent);
+            /* Emit nested block with braces to preserve scoping */
+            print_indent(out, indent);
+            fprintf(out, "{\n");
+            emit_block(out, &stmt->as.block_stmt.block, indent + 1);
+            print_indent(out, indent);
+            fprintf(out, "}\n");
             break;
         }
     }
