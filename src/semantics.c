@@ -449,6 +449,45 @@ static void validate_functions(ASTProgram* program, SymbolTable* table, Semantic
  * Note: Internal functions with the same name in different modules (that are
  * NOT explicitly imported) are allowed - they will be disambiguated via name
  * mangling during code generation (e.g., module_a_helper vs module_b_helper). */
+
+/* Validate that functions defined locally (in same module) don't have duplicates */
+static void validate_duplicate_functions(ASTProgram* program, SemanticErrorList* errors) {
+    /* Check for duplicate function definitions within the program */
+    for (int i = 0; i < program->function_count; i++) {
+        ASTFunctionDef* func_i = &program->functions[i];
+        
+        for (int j = i + 1; j < program->function_count; j++) {
+            ASTFunctionDef* func_j = &program->functions[j];
+            
+            /* If both functions come from the same module (or both are local), it's a duplicate */
+            if (strcmp(func_i->name, func_j->name) == 0) {
+                /* Check if they're from the same module */
+                int same_module = 1;
+                if (func_i->module_path && func_j->module_path) {
+                    same_module = strcmp(func_i->module_path, func_j->module_path) == 0;
+                } else if (func_i->module_path || func_j->module_path) {
+                    same_module = 0;  /* One is from a module, one is local - allowed */
+                }
+                
+                if (same_module) {
+                    char msg[512];
+                    if (func_i->module_path && func_j->module_path) {
+                        snprintf(msg, sizeof(msg),
+                                 "Function '%s' already defined (in module %s)",
+                                 func_i->name, func_i->module_path);
+                    } else {
+                        snprintf(msg, sizeof(msg),
+                                 "Function '%s' already defined",
+                                 func_i->name);
+                    }
+                    semantic_error_list_add(errors, msg, func_j->location);
+                    return;  /* Report first error and stop */
+                }
+            }
+        }
+    }
+}
+
 static void validate_import_collisions(ASTProgram* program, SemanticErrorList* errors) {
     /* Check each pair of import statements */
     for (int i = 0; i < program->import_count; i++) {
@@ -516,6 +555,13 @@ static void validate_imports(ASTProgram* program, SemanticErrorList* errors) {
 int analyze_program(ASTProgram* program, SymbolTable* table, SemanticErrorList* errors) {
     /* Pass 1: Validate import collisions */
     validate_import_collisions(program, errors);
+    
+    if (errors->error_count > 0) {
+        return 0;  /* Stop if there are errors */
+    }
+    
+    /* Pass 1b: Validate no duplicate functions */
+    validate_duplicate_functions(program, errors);
     
     if (errors->error_count > 0) {
         return 0;  /* Stop if there are errors */

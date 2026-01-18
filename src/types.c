@@ -53,9 +53,16 @@ void symbol_table_free(SymbolTable* table) {
 
 /* Add a function to the symbol table */
 int symbol_table_add_function(SymbolTable* table, const char* name, CasmType return_type,
-                               CasmType* param_types, int param_count, SourceLocation location) {
-    /* As of Phase 3, we allow multiple functions with the same name from different modules.
-     * The duplicate check is removed. Symbol IDs will disambiguate them later. */
+                                CasmType* param_types, int param_count, SourceLocation location) {
+    /* Check for duplicate function names in the symbol table.
+     * In multi-module programs, duplicate names from different modules are allowed
+     * because semantic analysis (validate_duplicate_functions) validates them.
+     * This check ensures single-module programs detect duplicates properly. */
+    for (int i = 0; i < table->function_count; i++) {
+        if (strcmp(table->functions[i].name, name) == 0) {
+            return 0;  /* Duplicate found */
+        }
+    }
     
     /* Expand if needed */
     if (table->function_count >= table->function_capacity) {
@@ -85,7 +92,7 @@ int symbol_table_add_function(SymbolTable* table, const char* name, CasmType ret
     }
     
     table->function_count++;
-    return 1;  /* Always success now */
+    return 1;  /* Success */
 }
 
 /* Look up a function */

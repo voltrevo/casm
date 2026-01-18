@@ -448,13 +448,10 @@ static void emit_function_declarations(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
         
-        /* Skip dead code - functions without allocated names are unreachable */
-        if (!func->allocated_name) {
-            continue;
-        }
-        
-        /* Use allocated name for dead code elimination */
-        char* mangled_name = mangle_function_name(func->allocated_name);
+        /* Use allocated name if available (for dead code elimination in multi-module),
+         * otherwise use the function's original name (for single-file programs) */
+        const char* func_name = func->allocated_name ? func->allocated_name : func->name;
+        char* mangled_name = mangle_function_name(func_name);
         
         fprintf(out, "%s %s(",
                 casm_type_to_c_type(func->return_type.type),
@@ -481,17 +478,16 @@ static void emit_function_declarations(FILE* out, ASTProgram* program) {
 static void emit_function_definitions(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
-        
-        /* Skip dead code - functions without allocated names are unreachable */
-        if (!func->allocated_name) {
-            continue;
-        }
-        
-        /* Set context for call resolution */
-        g_current_function = func;
-        
-        /* Use allocated name for dead code elimination */
-        char* mangled_name = mangle_function_name(func->allocated_name);
+         
+         /* Use allocated name if available (for dead code elimination in multi-module),
+          * otherwise use the function's original name (for single-file programs) */
+         const char* func_name = func->allocated_name ? func->allocated_name : func->name;
+         
+         /* Set context for call resolution */
+         g_current_function = func;
+         
+         /* Use allocated/original name for code generation */
+         char* mangled_name = mangle_function_name(func_name);
         
         fprintf(out, "%s %s(",
                 casm_type_to_c_type(func->return_type.type),
