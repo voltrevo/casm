@@ -409,7 +409,14 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
 static void emit_function_declarations(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
-        char* mangled_name = mangle_function_name(func->name);
+        
+        /* Skip dead code - functions without allocated names are unreachable */
+        if (!func->allocated_name) {
+            continue;
+        }
+        
+        /* Use allocated name for dead code elimination */
+        char* mangled_name = mangle_function_name(func->allocated_name);
         
         fprintf(out, "%s %s(",
                 casm_type_to_c_type(func->return_type.type),
@@ -436,7 +443,14 @@ static void emit_function_declarations(FILE* out, ASTProgram* program) {
 static void emit_function_definitions(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
-        char* mangled_name = mangle_function_name(func->name);
+        
+        /* Skip dead code - functions without allocated names are unreachable */
+        if (!func->allocated_name) {
+            continue;
+        }
+        
+        /* Use allocated name for dead code elimination */
+        char* mangled_name = mangle_function_name(func->allocated_name);
         
         fprintf(out, "%s %s(",
                 casm_type_to_c_type(func->return_type.type),

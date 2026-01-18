@@ -7,13 +7,6 @@
     return
   )
 
-  (func $multiply (param $a i32) (param $b i32) (result i32)
-    local.get $a
-    local.get $b
-    i32.mul
-    return
-  )
-
   (func $increment (param $x i32) (result i32)
     local.get $x
     i32.const 1

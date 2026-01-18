@@ -14,13 +14,6 @@
     return
   )
 
-  (func $subtract (param $a i32) (param $b i32) (result i32)
-    local.get $a
-    local.get $b
-    i32.sub
-    return
-  )
-
   (func $main (result i32) (local $sum i32) (local $product i32)
     i32.const 10
     i32.const 5
