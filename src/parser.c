@@ -848,10 +848,10 @@ static void parse_block(Parser* parser, ASTBlock* out_block) {
                 out_block->statements = xrealloc(out_block->statements, stmt_capacity * sizeof(ASTStatement));
             }
             /* Copy statement and steal its allocations */
-            out_block->statements[out_block->statement_count] = *stmt;
-            out_block->statement_count++;
-            /* Free the wrapper struct but NOT its contents (they're now owned by block) */
-            free(stmt);
+             out_block->statements[out_block->statement_count] = *stmt;
+             out_block->statement_count++;
+             /* Free the wrapper struct but NOT its contents (they're now owned by block) */
+             xfree(stmt);
         }
     }
     
