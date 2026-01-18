@@ -5,7 +5,7 @@ CFLAGS = -Wall -Wextra -pedantic -std=c99 -g -I./src
 LDFLAGS = -lm
 
 # Source files
-SOURCES = src/main.c src/lexer.c src/utils.c
+SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c
 TEST_SOURCES = tests/test_lexer.c src/lexer.c src/utils.c
 
 # Output
