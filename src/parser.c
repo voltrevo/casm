@@ -768,6 +768,18 @@ static ASTStatement* parse_statement(Parser* parser) {
         return parse_for_statement(parser);
     }
     
+    /* Bare block statement */
+    if (token.type == TOK_LBRACE) {
+        SourceLocation location = token.location;
+        ASTBlock block;
+        parse_block(parser, &block);
+        
+        ASTStatement* stmt = ast_statement_create(STMT_BLOCK, location);
+        stmt->as.block_stmt.block = block;
+        stmt->as.block_stmt.location = location;
+        return stmt;
+    }
+    
     /* Variable declaration */
     if (token.type == TOK_I8 || token.type == TOK_I16 || token.type == TOK_I32 ||
         token.type == TOK_I64 || token.type == TOK_U8 || token.type == TOK_U16 ||

@@ -158,6 +158,9 @@ static void ast_statement_free_contents(ASTStatement* stmt) {
             }
             ast_block_free(&stmt->as.for_stmt.body);
             break;
+        case STMT_BLOCK:
+            ast_block_free(&stmt->as.block_stmt.block);
+            break;
     }
 }
 

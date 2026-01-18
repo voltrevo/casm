@@ -19,6 +19,7 @@ typedef struct ASTVarDeclStmt ASTVarDeclStmt;
 typedef struct ASTIfStmt ASTIfStmt;
 typedef struct ASTWhileStmt ASTWhileStmt;
 typedef struct ASTForStmt ASTForStmt;
+typedef struct ASTBlockStmt ASTBlockStmt;
 typedef struct ASTElseIfClause ASTElseIfClause;
 typedef struct ASTBinaryOp ASTBinaryOp;
 typedef struct ASTUnaryOp ASTUnaryOp;
@@ -71,6 +72,7 @@ typedef enum {
     STMT_IF,
     STMT_WHILE,
     STMT_FOR,
+    STMT_BLOCK,
 } StatementType;
 
 struct ASTReturnStmt {
@@ -126,6 +128,12 @@ struct ASTForStmt {
     SourceLocation location;
 };
 
+/* Bare block statement */
+struct ASTBlockStmt {
+    ASTBlock block;
+    SourceLocation location;
+};
+
 struct ASTStatement {
     StatementType type;
     SourceLocation location;
@@ -136,6 +144,7 @@ struct ASTStatement {
         ASTIfStmt if_stmt;
         ASTWhileStmt while_stmt;
         ASTForStmt for_stmt;
+        ASTBlockStmt block_stmt;
     } as;
 };
 

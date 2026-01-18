@@ -244,6 +244,12 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
             fprintf(out, "}\n");
             break;
         }
+        
+        case STMT_BLOCK: {
+            /* Emit nested block statements */
+            emit_block(out, &stmt->as.block_stmt.block, indent);
+            break;
+        }
     }
 }
 

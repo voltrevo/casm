@@ -310,6 +310,12 @@ static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType r
             symbol_table_pop_scope(table);
             break;
         }
+        
+        case STMT_BLOCK: {
+            /* Analyze nested block statements */
+            analyze_block(&stmt->as.block_stmt.block, table, return_type, errors);
+            break;
+        }
     }
 }
 
