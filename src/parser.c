@@ -743,7 +743,74 @@ static ASTStatement* parse_for_statement(Parser* parser) {
     stmt->as.for_stmt.body = *body;
     xfree(body);
     
-    return stmt;
+     return stmt;
+}
+
+/* Helper: Generate a descriptive name for an expression (for dbg output) */
+static char* extract_expression_name(const ASTExpression* expr) {
+    char buffer[256];
+    
+    if (!expr) {
+        return xstrdup("expr");
+    }
+    
+    switch (expr->type) {
+        case EXPR_VARIABLE:
+            return xstrdup(expr->as.variable.name);
+        
+        case EXPR_LITERAL: {
+            snprintf(buffer, sizeof(buffer), "%ld", expr->as.literal.value.int_value);
+            return xstrdup(buffer);
+        }
+        
+        case EXPR_BINARY_OP: {
+            const ASTBinaryOp* binop = &expr->as.binary_op;
+            const char* op_str = "?";
+            
+            switch (binop->op) {
+                case BINOP_ADD: op_str = "+"; break;
+                case BINOP_SUB: op_str = "-"; break;
+                case BINOP_MUL: op_str = "*"; break;
+                case BINOP_DIV: op_str = "/"; break;
+                case BINOP_MOD: op_str = "%"; break;
+                case BINOP_EQ: op_str = "=="; break;
+                case BINOP_NE: op_str = "!="; break;
+                case BINOP_LT: op_str = "<"; break;
+                case BINOP_LE: op_str = "<="; break;
+                case BINOP_GT: op_str = ">"; break;
+                case BINOP_GE: op_str = ">="; break;
+                case BINOP_AND: op_str = "&&"; break;
+                case BINOP_OR: op_str = "||"; break;
+                case BINOP_ASSIGN: op_str = "="; break;
+                default: op_str = "?"; break;
+            }
+            
+            snprintf(buffer, sizeof(buffer), "expr(%s)", op_str);
+            return xstrdup(buffer);
+        }
+        
+        case EXPR_UNARY_OP: {
+            const ASTUnaryOp* unop = &expr->as.unary_op;
+            const char* op_str = "?";
+            
+            switch (unop->op) {
+                case UNOP_NEG: op_str = "-"; break;
+                case UNOP_NOT: op_str = "!"; break;
+                default: op_str = "?"; break;
+            }
+            
+            snprintf(buffer, sizeof(buffer), "%sexpr", op_str);
+            return xstrdup(buffer);
+        }
+        
+        case EXPR_FUNCTION_CALL: {
+            snprintf(buffer, sizeof(buffer), "%s()", expr->as.function_call.function_name);
+            return xstrdup(buffer);
+        }
+        
+        default:
+            return xstrdup("expr");
+    }
 }
 
 /* Parse a dbg statement: dbg(expr1, expr2, ...) */
@@ -771,15 +838,9 @@ static ASTStatement* parse_dbg_statement(Parser* parser) {
             return NULL;
         }
         
-        /* Extract argument name: if it's a simple variable, use the variable name */
-        char* arg_name = NULL;
-        if (expr->type == EXPR_VARIABLE) {
-            arg_name = xstrdup(expr->as.variable.name);
-        } else {
-            /* For complex expressions, we'd need to extract from source */
-            /* For now, use empty string */
-            arg_name = xstrdup("");
-        }
+        /* Extract argument name: if it's a simple variable, use the variable name
+           For complex expressions, generate a descriptive name */
+        char* arg_name = extract_expression_name(expr);
         arg_names[argument_count] = arg_name;
         arguments[argument_count] = *expr;
         xfree(expr);

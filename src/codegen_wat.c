@@ -418,8 +418,21 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
         }
         
         case STMT_DBG: {
-            /* WAT dbg support - not yet implemented */
-            /* For now, skip debug output in WAT */
+            /* WAT dbg support - emit debug calls */
+            ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
+            for (int i = 0; i < dbg->argument_count; i++) {
+                /* Push label ID (we use the argument index) */
+                print_indent(out, indent);
+                fprintf(out, "i32.const %d\n", i);
+                
+                /* Emit the expression value */
+                emit_expression(out, &dbg->arguments[i], indent);
+                fprintf(out, "\n");
+                
+                /* Call the debug function with label_id and value */
+                print_indent(out, indent);
+                fprintf(out, "call $__casm_dbg_i32\n");
+            }
             break;
         }
     }
@@ -482,6 +495,23 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
     
     /* Emit module header */
     fprintf(output, "(module\n");
+    
+    /* Check if there are any dbg statements that need debug support */
+    int has_dbg = 0;
+    for (int i = 0; i < program->function_count; i++) {
+        for (int j = 0; j < program->functions[i].body.statement_count; j++) {
+            if (program->functions[i].body.statements[j].type == STMT_DBG) {
+                has_dbg = 1;
+                break;
+            }
+        }
+        if (has_dbg) break;
+    }
+    
+    /* If there are dbg statements, import a debug function */
+    if (has_dbg) {
+        fprintf(output, "  (import \"env\" \"_casm_dbg_i32\" (func $__casm_dbg_i32 (param i32 i32)))\n");
+    }
     
     /* Emit function definitions */
     emit_function_definitions(output, program);

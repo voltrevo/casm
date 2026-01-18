@@ -1,2 +1,2 @@
-tests/dbg_cases/expressions/test.csm:5:4: arg0 = 8
-tests/dbg_cases/expressions/test.csm:6:4: arg0 = 15
+tests/dbg_cases/expressions/test.csm:5:4: expr(+) = 8
+tests/dbg_cases/expressions/test.csm:6:4: expr(*) = 15
