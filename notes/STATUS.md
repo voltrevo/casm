@@ -37,17 +37,17 @@
 | File | Lines |
 |------|-------|
 | src/lexer.c | 350 |
-| src/parser.c | 770 |
+| src/parser.c | 775 |
 | src/ast.c | 180 |
-| src/types.c | 200 |
-| src/semantics.c | 300 |
+| src/types.c | 225 |
+| src/semantics.c | 310 |
 | src/main.c | 157 |
 | src/utils.c | 50 |
-| tests/test_lexer.c | 450 |
-| tests/test_semantics.c | 350 |
+| tests/test_lexer.c | 315 |
+| tests/test_semantics.c | 408 |
 | Makefile | 68 |
 | run_tests.sh | 107 |
-| **Total** | **3,382** |
+| **Total** | **3,345** |
 
 ## Build Commands
 ```bash
