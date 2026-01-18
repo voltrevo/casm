@@ -1,0 +1,21 @@
+# Compiled executable
+casm
+
+# Object files
+*.o
+
+# Build artifacts
+*.a
+*.so
+*.dylib
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
