@@ -23,6 +23,7 @@ struct VariableSymbol {
     char* name;
     CasmType type;
     SourceLocation location;
+    int initialized;  /* Whether the variable has been assigned a value */
 };
 
 /* Scope - manages variables in a block */
@@ -53,6 +54,8 @@ FunctionSymbol* symbol_table_lookup_function(SymbolTable* table, const char* nam
 /* Variable operations */
 int symbol_table_add_variable(SymbolTable* table, const char* name, CasmType type, SourceLocation location);
 VariableSymbol* symbol_table_lookup_variable(SymbolTable* table, const char* name);
+int symbol_table_mark_initialized(SymbolTable* table, const char* name);
+int symbol_table_is_initialized(SymbolTable* table, const char* name);
 
 /* Scope operations */
 void symbol_table_push_scope(SymbolTable* table);

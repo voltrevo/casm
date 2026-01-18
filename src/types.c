@@ -116,6 +116,7 @@ int symbol_table_add_variable(SymbolTable* table, const char* name, CasmType typ
     strcpy(var->name, name);
     var->type = type;
     var->location = location;
+    var->initialized = 0;  /* Initially uninitialized */
     
     scope->variable_count++;
     return 1;  /* Success */
@@ -135,6 +136,25 @@ VariableSymbol* symbol_table_lookup_variable(SymbolTable* table, const char* nam
     }
     
     return NULL;
+}
+
+/* Mark a variable as initialized */
+int symbol_table_mark_initialized(SymbolTable* table, const char* name) {
+    VariableSymbol* var = symbol_table_lookup_variable(table, name);
+    if (!var) {
+        return 0;  /* Variable not found */
+    }
+    var->initialized = 1;
+    return 1;
+}
+
+/* Check if a variable is initialized */
+int symbol_table_is_initialized(SymbolTable* table, const char* name) {
+    VariableSymbol* var = symbol_table_lookup_variable(table, name);
+    if (!var) {
+        return 0;  /* Variable not found */
+    }
+    return var->initialized;
 }
 
 /* Push a new scope */

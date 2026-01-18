@@ -73,15 +73,62 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
                 expr->resolved_type = TYPE_VOID;
                 return TYPE_VOID;
             }
+            
+            /* Check if variable is initialized before use */
+            if (!var->initialized) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Variable '%s' used before initialization", expr->as.variable.name);
+                semantic_error_list_add(errors, msg, expr->location);
+            }
+            
             expr->resolved_type = var->type;
             return var->type;
         }
         
         case EXPR_BINARY_OP: {
-            CasmType left_type = analyze_expression(expr->as.binary_op.left, table, errors);
-            CasmType right_type = analyze_expression(expr->as.binary_op.right, table, errors);
-            
             BinaryOpType op = expr->as.binary_op.op;
+            
+            CasmType left_type;
+            CasmType right_type;
+            
+            /* For assignment, don't check initialization on left side */
+            if (op == BINOP_ASSIGN) {
+                /* Get type of left side without checking initialization */
+                if (expr->as.binary_op.left->type == EXPR_VARIABLE) {
+                    VariableSymbol* var = symbol_table_lookup_variable(table, expr->as.binary_op.left->as.variable.name);
+                    if (!var) {
+                        char msg[256];
+                        snprintf(msg, sizeof(msg), "Undefined variable '%s'", expr->as.binary_op.left->as.variable.name);
+                        semantic_error_list_add(errors, msg, expr->as.binary_op.left->location);
+                        left_type = TYPE_VOID;
+                    } else {
+                        left_type = var->type;
+                        expr->as.binary_op.left->resolved_type = var->type;
+                    }
+                } else {
+                    semantic_error_list_add(errors, "Can only assign to variables", expr->location);
+                    left_type = TYPE_VOID;
+                }
+                
+                right_type = analyze_expression(expr->as.binary_op.right, table, errors);
+                
+                if (left_type != TYPE_VOID && !types_compatible(left_type, right_type)) {
+                    semantic_error_list_add(errors, "Assignment type mismatch", expr->location);
+                }
+                
+                /* Mark the variable as initialized */
+                if (expr->as.binary_op.left->type == EXPR_VARIABLE) {
+                    symbol_table_mark_initialized(table, expr->as.binary_op.left->as.variable.name);
+                }
+                
+                /* Assignment expression has the type of the right-hand side */
+                expr->resolved_type = right_type;
+                return right_type;
+            }
+            
+            /* For other operators, analyze both sides normally */
+            left_type = analyze_expression(expr->as.binary_op.left, table, errors);
+            right_type = analyze_expression(expr->as.binary_op.right, table, errors);
             
             /* Check type compatibility */
             if (op >= BINOP_ADD && op <= BINOP_MOD) {
@@ -116,17 +163,6 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
                 if (right_type != TYPE_BOOL) {
                     semantic_error_list_add(errors, "Logical AND/OR require boolean operands", expr->location);
                 }
-            } else if (op == BINOP_ASSIGN) {
-                /* Assignment - left must be variable, types must match */
-                if (expr->as.binary_op.left->type != EXPR_VARIABLE) {
-                    semantic_error_list_add(errors, "Can only assign to variables", expr->location);
-                }
-                if (!types_compatible(left_type, right_type)) {
-                    semantic_error_list_add(errors, "Assignment type mismatch", expr->location);
-                }
-                /* Assignment expression has the type of the right-hand side */
-                expr->resolved_type = right_type;
-                return right_type;
             }
             
             expr->resolved_type = get_binary_op_result_type(left_type, op, right_type);
@@ -228,6 +264,8 @@ static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType r
                 if (!types_compatible(init_type, var_decl->type.type)) {
                     semantic_error_list_add(errors, "Initializer type mismatch", var_decl->location);
                 }
+                /* Mark variable as initialized */
+                symbol_table_mark_initialized(table, var_decl->name);
             }
             break;
         }
@@ -375,6 +413,8 @@ static void validate_functions(ASTProgram* program, SymbolTable* table, Semantic
             symbol_table_add_variable(table, func->parameters[j].name, 
                                       func->parameters[j].type.type, 
                                       func->parameters[j].location);
+            /* Function parameters are initialized by the call */
+            symbol_table_mark_initialized(table, func->parameters[j].name);
         }
         
         /* Analyze function body */
