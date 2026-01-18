@@ -8,12 +8,15 @@
 set -e
 
 DBG_TEST_TIMEOUT=2
-CASM_BIN="./bin/casm"
+CASM_BIN="../../../bin/casm"
 PASSED=0
 FAILED=0
 
-if [ ! -f "$CASM_BIN" ]; then
-    echo "✗ $CASM_BIN binary not found. Run 'make' first."
+# Save original directory
+ORIG_DIR=$(pwd)
+
+if [ ! -f "$ORIG_DIR/bin/casm" ]; then
+    echo "✗ bin/casm binary not found. Run 'make' first."
     exit 1
 fi
 
@@ -41,18 +44,17 @@ for test_dir in tests/dbg_cases/*/; do
     cleanup() { rm -rf "$temp_dir"; }
     trap cleanup EXIT
     
-    # Normalize the test file path (relative from cwd)
-    # Remove leading ./ and resolve to canonical form
-    normalized_test_file=$(echo "$test_file" | sed 's|^\./||')
+    # Change to test directory so the filename in error messages is just "test.csm"
+    cd "$ORIG_DIR/$test_dir"
     
-    # Step 1: Compile .csm to C
+    # Step 1: Compile .csm to C from within test directory
     compile_output="$temp_dir/compile_output.txt"
     generated_c="$temp_dir/generated.c"
     
-    if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=c --output="$generated_c" "$normalized_test_file" > "$compile_output" 2>&1; then
-        if [ -f "$compile_error_marker" ]; then
+    if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=c --output="$generated_c" "test.csm" > "$compile_output" 2>&1; then
+        if [ -f "compile_error" ]; then
             # Expected compilation error - check if error output matches expected
-            expected_output=$(cat "$output_file")
+            expected_output=$(cat "output.txt")
             actual_output=$(cat "$compile_output")
             if [ "$expected_output" = "$actual_output" ]; then
                 echo "✓ (expected compile error)"
@@ -66,13 +68,15 @@ for test_dir in tests/dbg_cases/*/; do
             echo "✗ (compilation failed)"
             FAILED=$((FAILED + 1))
         fi
+        cd "$ORIG_DIR"
         continue
     fi
     
     # If compilation succeeded but error was expected, that's a failure
-    if [ -f "$compile_error_marker" ]; then
+    if [ -f "compile_error" ]; then
         echo "✗ (expected compile error but succeeded)"
         FAILED=$((FAILED + 1))
+        cd "$ORIG_DIR"
         continue
     fi
     
@@ -98,7 +102,7 @@ for test_dir in tests/dbg_cases/*/; do
     
     # Step 4: Compare output (stdout + stderr combined, in that order)
     cat "$temp_dir/run_stdout.txt" "$temp_dir/run_stderr.txt" > "$temp_dir/actual_output.txt"
-    expected_output=$(cat "$output_file")
+    expected_output=$(cat "output.txt")
     actual_output=$(cat "$temp_dir/actual_output.txt")
     
     if [ "$expected_output" = "$actual_output" ]; then
@@ -112,6 +116,9 @@ for test_dir in tests/dbg_cases/*/; do
         echo "$actual_output" | sed 's/^/      /'
         FAILED=$((FAILED + 1))
     fi
+    
+    # Return to original directory
+    cd "$ORIG_DIR"
 done
 
 echo ""

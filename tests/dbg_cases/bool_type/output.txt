@@ -1,2 +1,2 @@
-tests/dbg_cases/bool_type/test.csm:5:4: t = true
-tests/dbg_cases/bool_type/test.csm:6:4: f = false
+test.csm:5:4: t = true
+test.csm:6:4: f = false

@@ -1,1 +1,1 @@
-tests/dbg_cases/compile_error_undefined/test.csm:3:8: Undefined variable 'undefined_var'
+test.csm:3:8: Undefined variable 'undefined_var'
