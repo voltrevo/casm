@@ -1,0 +1,7 @@
+// Test dbg() with logical expressions
+i32 main() {
+    bool a = true;
+    bool b = false;
+    dbg(a && b, a || b);
+    return 0;
+}

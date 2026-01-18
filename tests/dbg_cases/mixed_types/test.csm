@@ -1,0 +1,8 @@
+// Test dbg() with different integer types mixed
+i32 main() {
+    i32 a = 100;
+    i32 b = 50;
+    bool c = true;
+    dbg(a, b, c);
+    return 0;
+}

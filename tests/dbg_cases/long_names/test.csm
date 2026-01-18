@@ -1,0 +1,6 @@
+// Test dbg() with very long variable names
+i32 main() {
+    i32 very_long_variable_name_that_goes_on_and_on = 42;
+    dbg(very_long_variable_name_that_goes_on_and_on);
+    return 0;
+}

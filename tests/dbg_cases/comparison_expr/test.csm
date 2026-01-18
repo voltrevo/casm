@@ -1,0 +1,7 @@
+// Test dbg() with comparison expressions
+i32 main() {
+    i32 x = 10;
+    i32 y = 20;
+    dbg(x == y, x < y, x > y, x != y);
+    return 0;
+}

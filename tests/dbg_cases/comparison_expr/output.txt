@@ -1,0 +1,1 @@
+test.csm:5:4: expr(==) = false, expr(<) = true, expr(>) = false, expr(!=) = true
