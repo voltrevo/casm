@@ -747,8 +747,13 @@ ASTProgram* parser_parse(Parser* parser) {
             program->functions = xrealloc(program->functions, func_capacity * sizeof(ASTFunctionDef));
         }
         
-        if (parse_function(parser, &program->functions[program->function_count])) {
+        ASTFunctionDef temp_func = {0};
+        if (parse_function(parser, &temp_func)) {
+            program->functions[program->function_count] = temp_func;
             program->function_count++;
+        } else {
+            /* Function failed to parse - clean up the partial function */
+            ast_function_free(&temp_func);
         }
     }
     
