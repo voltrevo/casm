@@ -1,0 +1,9 @@
+// Test dbg() with direct function call
+i32 get_five() {
+    return 5;
+}
+
+i32 main() {
+    dbg(get_five());
+    return 0;
+}

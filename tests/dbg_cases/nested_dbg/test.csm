@@ -1,0 +1,10 @@
+// Test dbg() in nested scopes
+i32 main() {
+    i32 x = 10;
+    {
+        i32 y = 20;
+        dbg(x, y);
+    }
+    dbg(x);
+    return 0;
+}

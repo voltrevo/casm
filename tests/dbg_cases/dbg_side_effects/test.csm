@@ -1,0 +1,13 @@
+// Test dbg() doesn't double-evaluate expressions
+// (This currently would print "called twice" if the function had side effects)
+i32 counter = 0;
+
+i32 increment() {
+    counter = counter + 1;
+    return counter;
+}
+
+i32 main() {
+    dbg(increment());
+    return 0;
+}

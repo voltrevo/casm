@@ -1,0 +1,7 @@
+// Test dbg() with arithmetic expressions
+i32 main() {
+    i32 x = 5;
+    i32 y = 10;
+    dbg(x + y, x * y, y - x);
+    return 0;
+}

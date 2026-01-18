@@ -1,0 +1,5 @@
+// Test dbg() with no arguments - should be an error
+i32 main() {
+    dbg();
+    return 0;
+}

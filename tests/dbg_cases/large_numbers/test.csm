@@ -1,0 +1,8 @@
+// Test dbg() with large numbers
+i32 main() {
+    i32 max_val = 2147483647;  // Max i32
+    i32 min_val = -2147483648;  // Min i32
+    i32 zero = 0;
+    dbg(max_val, min_val, zero);
+    return 0;
+}
