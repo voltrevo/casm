@@ -281,11 +281,13 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
             print_indent(out, indent);
             fprintf(out, "printf(\"");
             
+            /* Location info only once */
+            fprintf(out, "%s:%d:%d: ", g_source_filename, dbg->location.line, dbg->location.column);
+            
             /* Build the format string with all arguments */
             for (int i = 0; i < dbg->argument_count; i++) {
-                if (i > 0) fprintf(out, " ");  /* Space between multiple args */
+                if (i > 0) fprintf(out, ", ");  /* Comma between arguments */
                 
-                fprintf(out, "%s:%d:%d: ", g_source_filename, dbg->location.line, dbg->location.column);
                 if (dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0) {
                     fprintf(out, "%s = ", dbg->arg_names[i]);
                 } else {
