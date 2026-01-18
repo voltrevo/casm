@@ -1,3 +1,7 @@
-# Agent Instructions
-
-When you finish completing a task or milestone, always discuss with the user what should be done next before proceeding with the next piece of work.
+- agents.md is always an ultra-concise list, do not change format
+- when you finish a task, discuss with user before proceeding
+- use tdd
+- commit changes as you go
+- do not tolerate memory leaks (your code should never leak, fix it immediately)
+- all code is young and experimental, no backwards compatibility needed
+- keep notes dir concise and up to date (describes the current state only, not things that were done)
