@@ -186,24 +186,68 @@ void symbol_table_pop_scope(SymbolTable* table) {
 }
 
 /* Check if two types are compatible */
+/* Enforce stricter type checking to prevent most narrowing conversions.
+   Allow exact match, widening conversions, and i64/u64 narrowing (as these
+   are used as default types for integer literals).
+   
+   This improves type safety while being pragmatic about literal defaults.
+   
+   Arguments: left = source type, right = target type
+*/
 int types_compatible(CasmType left, CasmType right) {
     if (left == right) {
+        return 1;  /* Exact match */
+    }
+    
+    /* Get size of each type */
+    int source_size = get_type_size_bits(left);
+    int target_size = get_type_size_bits(right);
+    
+    /* If either is not numeric, they must be exact match */
+    if (source_size < 0 || target_size < 0) {
+        return 0;
+    }
+    
+    /* Both must be same signedness (both signed or both unsigned) */
+    int source_signed = (left >= TYPE_I8 && left <= TYPE_I64);
+    int target_signed = (right >= TYPE_I8 && right <= TYPE_I64);
+    
+    if (source_signed != target_signed) {
+        return 0;  /* Can't mix signed and unsigned */
+    }
+    
+    /* Allow widening: source type must be <= target type */
+    if (source_size <= target_size) {
         return 1;
     }
     
-    /* Signed integers are compatible with each other */
-    if ((left == TYPE_I8 || left == TYPE_I16 || left == TYPE_I32 || left == TYPE_I64) &&
-        (right == TYPE_I8 || right == TYPE_I16 || right == TYPE_I32 || right == TYPE_I64)) {
+    /* Allow i64/u64 to narrow to smaller integers
+       (i64/u64 are default types for integer literals) */
+    if ((left == TYPE_I64 && target_signed) || (left == TYPE_U64 && !target_signed)) {
         return 1;
     }
     
-    /* Unsigned integers are compatible with each other */
-    if ((left == TYPE_U8 || left == TYPE_U16 || left == TYPE_U32 || left == TYPE_U64) &&
-        (right == TYPE_U8 || right == TYPE_U16 || right == TYPE_U32 || right == TYPE_U64)) {
-        return 1;
+    return 0;  /* Prevent other narrowing conversions */
+}
+
+/* Get the bit width of a type */
+int get_type_size_bits(CasmType type) {
+    switch (type) {
+        case TYPE_I8:
+        case TYPE_U8:
+            return 8;
+        case TYPE_I16:
+        case TYPE_U16:
+            return 16;
+        case TYPE_I32:
+        case TYPE_U32:
+            return 32;
+        case TYPE_I64:
+        case TYPE_U64:
+            return 64;
+        default:
+            return -1;  /* Not a numeric type */
     }
-    
-    return 0;
 }
 
 /* Get result type for binary operations */

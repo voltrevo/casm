@@ -63,6 +63,7 @@ void symbol_table_pop_scope(SymbolTable* table);
 
 /* Type operations */
 int types_compatible(CasmType left, CasmType right);
+int get_type_size_bits(CasmType type);  /* Returns bit width of type, -1 for non-numeric */
 CasmType get_binary_op_result_type(CasmType left, BinaryOpType op, CasmType right);
 CasmType get_unary_op_result_type(UnaryOpType op, CasmType operand);
 
