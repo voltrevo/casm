@@ -3,6 +3,7 @@
 ## Files
 
 - **STATUS.md** - Current project status, what's done, what's next
+- **PLAN.md** - Original compiler design and architecture document
 - **SYMBOL_TABLE.md** - Symbol table & type system (COMPLETE)
 - **QUICK_REF.md** - Common commands and lookup info
 
