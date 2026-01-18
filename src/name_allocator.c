@@ -59,9 +59,30 @@ static int try_allocate_name(NameAllocator* allocator, uint32_t symbol_id, const
     return 0;  /* Symbol not found */
 }
 
-/* Allocate names following the priority rules */
+/* Helper: Check if multiple reachable functions share the same original name but different modules */
+static int has_same_name_from_different_module(NameAllocator* allocator, 
+                                               uint32_t* reachable_ids, 
+                                               int reachable_count,
+                                               const AllocationRecord* record) {
+    for (int i = 0; i < reachable_count; i++) {
+        for (int j = 0; j < allocator->allocation_count; j++) {
+            AllocationRecord* other = &allocator->allocations[j];
+            if (other->symbol_id == reachable_ids[i] && 
+                other->is_reachable &&
+                other != record &&
+                strcmp(other->original_name, record->original_name) == 0 &&
+                strcmp(other->module_path, record->module_path) != 0) {
+                return 1;  /* Found another reachable function with same name, different module */
+            }
+        }
+    }
+    return 0;
+}
+
+/* Allocate names following the priority rules, with smart collision detection */
 static void allocate_names(NameAllocator* allocator, ASTProgram* program, uint32_t* reachable_ids, int reachable_count) {
     (void)program;  /* Unused - program context already in allocation records */
+    
     /* For each reachable function, allocate a name following the priority */
     for (int i = 0; i < reachable_count; i++) {
         uint32_t symbol_id = reachable_ids[i];
@@ -76,33 +97,62 @@ static void allocate_names(NameAllocator* allocator, ASTProgram* program, uint32
         }
 
         if (!record) continue;
+        if (record->allocated_name) continue;  /* Already allocated */
 
-        /* Priority 1: Try original name */
-        if (try_allocate_name(allocator, symbol_id, record->original_name)) {
-            continue;
-        }
-
-        /* Priority 2: Try basename_originalname */
-        char* basename = extract_basename(record->module_path);
-        char combined[512];
-        snprintf(combined, sizeof(combined), "%s_%s", basename, record->original_name);
+        /* Check if this name conflicts with another reachable function from a different module */
+        int has_conflict = has_same_name_from_different_module(allocator, reachable_ids, reachable_count, record);
         
-        if (try_allocate_name(allocator, symbol_id, combined)) {
-            xfree(basename);
-            continue;
-        }
-
-        /* Priority 3: Try basename_originalname_N for N >= 2 */
-        int counter = 2;
-        while (counter <= 100) {  /* Safety limit */
-            snprintf(combined, sizeof(combined), "%s_%s_%d", basename, record->original_name, counter);
+        if (has_conflict) {
+            /* Force module-based mangling: basename_originalname */
+            char* basename = extract_basename(record->module_path);
+            char combined[512];
+            snprintf(combined, sizeof(combined), "%s_%s", basename, record->original_name);
+            
             if (try_allocate_name(allocator, symbol_id, combined)) {
-                break;
+                xfree(basename);
+                continue;
             }
-            counter++;
-        }
 
-        xfree(basename);
+            /* Fallback: Try basename_originalname_N for N >= 2 */
+            int counter = 2;
+            while (counter <= 100) {  /* Safety limit */
+                snprintf(combined, sizeof(combined), "%s_%s_%d", basename, record->original_name, counter);
+                if (try_allocate_name(allocator, symbol_id, combined)) {
+                    break;
+                }
+                counter++;
+            }
+            xfree(basename);
+        } else {
+            /* No conflict - use standard priority */
+            
+            /* Priority 1: Try original name */
+            if (try_allocate_name(allocator, symbol_id, record->original_name)) {
+                continue;
+            }
+
+            /* Priority 2: Try basename_originalname */
+            char* basename = extract_basename(record->module_path);
+            char combined[512];
+            snprintf(combined, sizeof(combined), "%s_%s", basename, record->original_name);
+            
+            if (try_allocate_name(allocator, symbol_id, combined)) {
+                xfree(basename);
+                continue;
+            }
+
+            /* Priority 3: Try basename_originalname_N for N >= 2 */
+            int counter = 2;
+            while (counter <= 100) {  /* Safety limit */
+                snprintf(combined, sizeof(combined), "%s_%s_%d", basename, record->original_name, counter);
+                if (try_allocate_name(allocator, symbol_id, combined)) {
+                    break;
+                }
+                counter++;
+            }
+
+            xfree(basename);
+        }
     }
 }
 

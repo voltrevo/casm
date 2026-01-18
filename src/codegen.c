@@ -10,6 +10,12 @@ static const char* g_source_filename = "unknown.csm";
 /* Global counter for unique dbg temporary variables */
 static int g_dbg_tmp_counter = 0;
 
+/* Global reference to the program being compiled (for function call resolution) */
+static ASTProgram* g_current_program = NULL;
+
+/* Global reference to the current function being compiled (for module context in calls) */
+static ASTFunctionDef* g_current_function = NULL;
+
 /* Helper: Map CASM type to C type string */
 static const char* casm_type_to_c_type(CasmType type) {
     switch (type) {
@@ -36,6 +42,36 @@ static char* mangle_function_name(const char* qualified_name) {
         }
     }
     return mangled;
+}
+
+/* Helper: Look up the allocated name for a function call */
+static const char* get_call_target_name(const char* call_name) {
+    if (!g_current_program || !call_name) {
+        return call_name;
+    }
+    
+    /* If we have module context, prefer functions from the same module */
+    if (g_current_function && g_current_function->module_path) {
+        for (int i = 0; i < g_current_program->function_count; i++) {
+            ASTFunctionDef* func = &g_current_program->functions[i];
+            if (func->allocated_name && 
+                strcmp(func->name, call_name) == 0 &&
+                strcmp(func->module_path, g_current_function->module_path) == 0) {
+                return func->allocated_name;
+            }
+        }
+    }
+    
+    /* Fallback: Try to find any function with this name that has an allocated_name */
+    for (int i = 0; i < g_current_program->function_count; i++) {
+        ASTFunctionDef* func = &g_current_program->functions[i];
+        if (func->allocated_name && strcmp(func->name, call_name) == 0) {
+            return func->allocated_name;
+        }
+    }
+    
+    /* Not found - use the original name */
+    return call_name;
 }
 
 /* Helper: Check if expression is a function call */
@@ -140,7 +176,9 @@ static void emit_expression(FILE* out, ASTExpression* expr) {
         }
         
         case EXPR_FUNCTION_CALL: {
-            char* mangled_name = mangle_function_name(expr->as.function_call.function_name);
+            /* Look up the actual function name (handles allocated names with mangling) */
+            const char* call_target = get_call_target_name(expr->as.function_call.function_name);
+            char* mangled_name = mangle_function_name(call_target);
             fprintf(out, "%s(", mangled_name);
             xfree(mangled_name);
             for (int i = 0; i < expr->as.function_call.argument_count; i++) {
@@ -449,6 +487,9 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
             continue;
         }
         
+        /* Set context for call resolution */
+        g_current_function = func;
+        
         /* Use allocated name for dead code elimination */
         char* mangled_name = mangle_function_name(func->allocated_name);
         
@@ -476,6 +517,9 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
         }
         
         xfree(mangled_name);
+        
+        /* Clear context */
+        g_current_function = NULL;
     }
 }
 
@@ -488,8 +532,9 @@ CodegenResult codegen_program(ASTProgram* program, FILE* output, const char* sou
         return result;
     }
     
-    /* Store filename for use in dbg output */
+    /* Store references for use in code emission */
     g_source_filename = source_filename ? source_filename : "unknown.csm";
+    g_current_program = program;
     
     /* Emit includes */
     fprintf(output, "#include <stdint.h>\n");
@@ -502,6 +547,9 @@ CodegenResult codegen_program(ASTProgram* program, FILE* output, const char* sou
     
     /* Emit function definitions */
     emit_function_definitions(output, program);
+    
+    /* Clear global reference */
+    g_current_program = NULL;
     
     CodegenResult result;
     result.success = 1;

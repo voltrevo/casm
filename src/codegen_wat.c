@@ -4,6 +4,12 @@
 #include "codegen_wat.h"
 #include "utils.h"
 
+/* Global reference to the program being compiled (for function call resolution) */
+static ASTProgram* g_current_program = NULL;
+
+/* Global reference to the current function being compiled (for module context in calls) */
+static ASTFunctionDef* g_current_function = NULL;
+
 /* Helper: Map CASM type to WAT type string */
 static const char* casm_type_to_wat_type(CasmType type) {
     switch (type) {
@@ -30,6 +36,36 @@ static char* mangle_function_name(const char* qualified_name) {
         }
     }
     return mangled;
+}
+
+/* Helper: Look up the allocated name for a function call */
+static const char* get_call_target_name(const char* call_name) {
+    if (!g_current_program || !call_name) {
+        return call_name;
+    }
+    
+    /* If we have module context, prefer functions from the same module */
+    if (g_current_function && g_current_function->module_path) {
+        for (int i = 0; i < g_current_program->function_count; i++) {
+            ASTFunctionDef* func = &g_current_program->functions[i];
+            if (func->allocated_name && 
+                strcmp(func->name, call_name) == 0 &&
+                strcmp(func->module_path, g_current_function->module_path) == 0) {
+                return func->allocated_name;
+            }
+        }
+    }
+    
+    /* Fallback: Try to find any function with this name that has an allocated_name */
+    for (int i = 0; i < g_current_program->function_count; i++) {
+        ASTFunctionDef* func = &g_current_program->functions[i];
+        if (func->allocated_name && strcmp(func->name, call_name) == 0) {
+            return func->allocated_name;
+        }
+    }
+    
+    /* Not found - use the original name */
+    return call_name;
 }
 
 /* Helper: Print indent (2 spaces per level) */
@@ -171,7 +207,9 @@ static void emit_expression(FILE* out, ASTExpression* expr, int indent) {
                 fprintf(out, "\n");
             }
             print_indent(out, indent);
-            char* mangled_name = mangle_function_name(call->function_name);
+            /* Look up the actual function name (handles allocated names with mangling) */
+            const char* call_target = get_call_target_name(call->function_name);
+            char* mangled_name = mangle_function_name(call_target);
             fprintf(out, "call $%s", mangled_name);
             xfree(mangled_name);
             break;
@@ -461,6 +499,9 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
             continue;
         }
         
+        /* Set context for call resolution */
+        g_current_function = func;
+        
         /* Use allocated name for dead code elimination */
         char* mangled_name = mangle_function_name(func->allocated_name);
         
@@ -504,6 +545,9 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
         }
         
         xfree(mangled_name);
+        
+        /* Clear context */
+        g_current_function = NULL;
     }
 }
 
@@ -515,6 +559,9 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
         result.error_msg = "Invalid input to codegen_wat_program";
         return result;
     }
+    
+    /* Store program reference for use in code emission */
+    g_current_program = program;
     
     /* Emit module header */
     fprintf(output, "(module\n");
@@ -541,6 +588,9 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
     
     /* Close module */
     fprintf(output, ")\n");
+    
+    /* Clear global reference */
+    g_current_program = NULL;
     
     CodegenWatResult result;
     result.success = 1;

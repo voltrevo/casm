@@ -1,6 +1,6 @@
 (module
   (func $__casm_dbg_i32 (param i32 i32))
-  (func $helper (param $x i32) (result i32)
+  (func $module_a_helper (param $x i32) (result i32)
     local.get $x
     i32.const 10
     i32.add
@@ -9,11 +9,11 @@
 
   (func $process_a (param $n i32) (result i32)
     local.get $n
-    call $helper
+    call $module_a_helper
     return
   )
 
-  (func $helper (param $x i32) (result i32)
+  (func $module_b_helper (param $x i32) (result i32)
     local.get $x
     i32.const 5
     i32.mul
@@ -22,7 +22,7 @@
 
   (func $process_b (param $n i32) (result i32)
     local.get $n
-    call $helper
+    call $module_b_helper
     return
   )
 
