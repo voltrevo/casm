@@ -356,8 +356,15 @@ static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType r
         }
         
         case STMT_DBG: {
-            /* Analyze dbg statement - just validate all arguments are valid expressions */
+            /* Analyze dbg statement - validate all arguments are valid expressions */
             ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
+            
+            /* dbg() requires at least one argument */
+            if (dbg->argument_count == 0) {
+                semantic_error_list_add(errors, "dbg() requires at least one argument", dbg->location);
+                break;
+            }
+            
             for (int i = 0; i < dbg->argument_count; i++) {
                 analyze_expression(&dbg->arguments[i], table, errors);
             }

@@ -24,6 +24,11 @@ static const char* casm_type_to_c_type(CasmType type) {
     }
 }
 
+/* Helper: Check if expression is a function call */
+static int is_function_call(ASTExpression* expr) {
+    return expr && expr->type == EXPR_FUNCTION_CALL;
+}
+
 /* Helper: Emit expression to file */
 static void emit_expression(FILE* out, ASTExpression* expr);
 
@@ -278,6 +283,19 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
         case STMT_DBG: {
             ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
             
+            /* First, check if any arguments are function calls */
+            /* If so, we need to store their values in temp variables */
+            for (int i = 0; i < dbg->argument_count; i++) {
+                if (is_function_call(&dbg->arguments[i])) {
+                    /* Emit temporary variable assignment for this function call */
+                    print_indent(out, indent);
+                    fprintf(out, "%s __dbg_tmp_%d = ",
+                            casm_type_to_c_type(dbg->arguments[i].resolved_type), i);
+                    emit_expression(out, &dbg->arguments[i]);
+                    fprintf(out, ";\n");
+                }
+            }
+            
             print_indent(out, indent);
             fprintf(out, "printf(\"");
             
@@ -316,23 +334,34 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
                 fprintf(out, ", ");
                 CasmType arg_type = dbg->arguments[i].resolved_type;
                 
-                /* For bool, we need to wrap the expression to convert to "true"/"false" */
-                if (arg_type == TYPE_BOOL) {
-                    fprintf(out, "(");
-                    emit_expression(out, &dbg->arguments[i]);
-                    fprintf(out, ") ? \"true\" : \"false\"");
-                } else if (arg_type == TYPE_I64 || arg_type == TYPE_U64) {
-                    /* Cast to long long for 64-bit values */
-                    fprintf(out, "(long long)(");
-                    emit_expression(out, &dbg->arguments[i]);
-                    fprintf(out, ")");
-                } else if (arg_type == TYPE_U32 || arg_type == TYPE_U8 || arg_type == TYPE_U16) {
-                    /* Cast to unsigned for unsigned values */
-                    fprintf(out, "(unsigned int)(");
-                    emit_expression(out, &dbg->arguments[i]);
-                    fprintf(out, ")");
+                /* Use temp variable if this was a function call, otherwise emit expression */
+                if (is_function_call(&dbg->arguments[i])) {
+                    if (arg_type == TYPE_BOOL) {
+                        fprintf(out, "__dbg_tmp_%d ? \"true\" : \"false\"", i);
+                    } else if (arg_type == TYPE_I64 || arg_type == TYPE_U64) {
+                        fprintf(out, "(long long)__dbg_tmp_%d", i);
+                    } else if (arg_type == TYPE_U32 || arg_type == TYPE_U8 || arg_type == TYPE_U16) {
+                        fprintf(out, "(unsigned int)__dbg_tmp_%d", i);
+                    } else {
+                        fprintf(out, "__dbg_tmp_%d", i);
+                    }
                 } else {
-                    emit_expression(out, &dbg->arguments[i]);
+                    /* For non-function-call expressions, emit them directly as before */
+                    if (arg_type == TYPE_BOOL) {
+                        fprintf(out, "(");
+                        emit_expression(out, &dbg->arguments[i]);
+                        fprintf(out, ") ? \"true\" : \"false\"");
+                    } else if (arg_type == TYPE_I64 || arg_type == TYPE_U64) {
+                        fprintf(out, "(long long)(");
+                        emit_expression(out, &dbg->arguments[i]);
+                        fprintf(out, ")");
+                    } else if (arg_type == TYPE_U32 || arg_type == TYPE_U8 || arg_type == TYPE_U16) {
+                        fprintf(out, "(unsigned int)(");
+                        emit_expression(out, &dbg->arguments[i]);
+                        fprintf(out, ")");
+                    } else {
+                        emit_expression(out, &dbg->arguments[i]);
+                    }
                 }
             }
             fprintf(out, ");\n");
