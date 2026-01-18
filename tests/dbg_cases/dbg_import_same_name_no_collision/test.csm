@@ -1,0 +1,11 @@
+// Test - both modules have a function named 'process'
+// But we only import one of them, so there's no collision
+// This is different from dbg_import_error_collision where we import the SAME name from BOTH
+
+#import process from "./string_ops.csm";
+
+i32 main() {
+    i32 result = process(5);
+    dbg(result);
+    return 0;
+}
