@@ -1,0 +1,1 @@
+test.csm:5:4: z = 0, expr(*) = 0, expr(+) = 10

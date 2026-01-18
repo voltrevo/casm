@@ -778,7 +778,7 @@ static char* extract_expression_name(const ASTExpression* expr) {
                 case BINOP_SUB: op_str = "-"; break;
                 case BINOP_MUL: op_str = "*"; break;
                 case BINOP_DIV: op_str = "/"; break;
-                case BINOP_MOD: op_str = "%"; break;
+                case BINOP_MOD: op_str = "%%"; break;  /* Escape % for printf */
                 case BINOP_EQ: op_str = "=="; break;
                 case BINOP_NE: op_str = "!="; break;
                 case BINOP_LT: op_str = "<"; break;

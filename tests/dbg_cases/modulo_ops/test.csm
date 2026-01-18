@@ -1,0 +1,7 @@
+// Test dbg() with modulo operations
+i32 main() {
+    i32 a = 17;
+    i32 b = 5;
+    dbg(a % b, b % a, 0 % b);
+    return 0;
+}

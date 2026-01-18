@@ -1,0 +1,7 @@
+// Test dbg() with zero and zero operations
+i32 main() {
+    i32 z = 0;
+    i32 x = 10;
+    dbg(z, x * z, z + x);
+    return 0;
+}

@@ -1,0 +1,7 @@
+// Test dbg() with negative numbers
+i32 main() {
+    i32 neg = -100;
+    i32 pos = 100;
+    dbg(neg, pos, neg + pos);
+    return 0;
+}
