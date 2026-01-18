@@ -1,0 +1,3 @@
+test.csm:4:4: x = 10
+test.csm:6:4: x = 15
+test.csm:8:4: x = 30

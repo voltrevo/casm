@@ -1,0 +1,8 @@
+// Test dbg() with assignment expressions
+i32 main() {
+    i32 x = 0;
+    i32 y = 0;
+    dbg(x = 5, y = 10);
+    dbg(x, y);
+    return 0;
+}

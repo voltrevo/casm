@@ -1,0 +1,8 @@
+// Test dbg() with deeply nested expressions
+i32 main() {
+    i32 x = 10;
+    i32 y = 5;
+    i32 z = 2;
+    dbg(x + y * z, (x - y) * (y + z), x * y / z);
+    return 0;
+}

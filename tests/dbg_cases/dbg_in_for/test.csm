@@ -1,0 +1,9 @@
+// Test dbg() in for loop
+i32 main() {
+    i32 i = 0;
+    for (i = 0; i < 3; i = i + 1) {
+        i32 squared = i * i;
+        dbg(i, squared);
+    }
+    return 0;
+}

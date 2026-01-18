@@ -1,0 +1,2 @@
+test.csm:5:4: expr(=) = 5, expr(=) = 10
+test.csm:6:4: x = 5, y = 10

@@ -1,0 +1,10 @@
+// Test multiple dbg() statements in same program
+i32 main() {
+    i32 x = 10;
+    dbg(x);
+    x = x + 5;
+    dbg(x);
+    x = x * 2;
+    dbg(x);
+    return 0;
+}

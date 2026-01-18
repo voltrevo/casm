@@ -1,0 +1,3 @@
+test.csm:6:8: i = 0, squared = 0
+test.csm:6:8: i = 1, squared = 1
+test.csm:6:8: i = 2, squared = 4
