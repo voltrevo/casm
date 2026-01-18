@@ -7,6 +7,7 @@
 #include "codegen.h"
 #include "codegen_wat.h"
 #include "module_loader.h"
+#include "name_allocator.h"
 #include "utils.h"
 
 static char* read_file(const char* filename) {
@@ -107,6 +108,12 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    /* Allocate names to handle symbol deduplication (Phase 5) */
+    NameAllocator* allocator = name_allocator_create(program);
+    if (allocator) {
+        name_allocator_apply(allocator, program);
+    }
+    
     /* Code generation */
     if (strcmp(target, "c") == 0) {
         /* Generate output filename if not specified */
@@ -174,6 +181,9 @@ int main(int argc, char** argv) {
     
     semantic_error_list_free(sem_errors);
     symbol_table_free(table);
+    if (allocator) {
+        name_allocator_free(allocator);
+    }
     ast_program_free_merged(program);
     xfree(source);
     return 0;

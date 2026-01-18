@@ -442,13 +442,44 @@ static void validate_functions(ASTProgram* program, SymbolTable* table, Semantic
 
 /* Validate that imported names only come from specified files (no collisions) */
 /* Validate that imported names are not colliding from different sources
- * NOTE: This validation is disabled as of Phase 3 of symbol deduplication.
- * We now allow functions with the same name from different modules.
- * The symbol ID-based linking will disambiguate them during code generation. */
+ * An explicit collision occurs when the same function name is imported from
+ * multiple modules. This is an error because it's ambiguous which version
+ * to use when called.
+ * 
+ * Note: Internal functions with the same name in different modules (that are
+ * NOT explicitly imported) are allowed - they will be disambiguated via name
+ * mangling during code generation (e.g., module_a_helper vs module_b_helper). */
 static void validate_import_collisions(ASTProgram* program, SemanticErrorList* errors) {
-    (void)program;  /* Unused */
-    (void)errors;   /* Unused */
-    /* Collision validation disabled - see comment above */
+    /* Check each pair of import statements */
+    for (int i = 0; i < program->import_count; i++) {
+        ASTImportStatement* import_i = &program->imports[i];
+        
+        for (int j = i + 1; j < program->import_count; j++) {
+            ASTImportStatement* import_j = &program->imports[j];
+            
+            /* Different files? */
+            if (strcmp(import_i->file_path, import_j->file_path) == 0) {
+                continue;  /* Same file, not a collision */
+            }
+            
+            /* Check if any names appear in both imports */
+            for (int ni = 0; ni < import_i->name_count; ni++) {
+                for (int nj = 0; nj < import_j->name_count; nj++) {
+                    if (strcmp(import_i->imported_names[ni], import_j->imported_names[nj]) == 0) {
+                        /* Found a collision */
+                        char msg[512];
+                        snprintf(msg, sizeof(msg),
+                                 "Function '%s' imported from both '%s' and '%s'",
+                                 import_i->imported_names[ni],
+                                 import_i->file_path,
+                                 import_j->file_path);
+                        semantic_error_list_add(errors, msg, import_j->location);
+                        return;  /* Report first error and stop */
+                    }
+                }
+            }
+        }
+    }
 }
 
 /* Validate that imported names actually exist as functions in the program */
