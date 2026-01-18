@@ -189,28 +189,15 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
         }
         
         case EXPR_FUNCTION_CALL: {
-            char* module_name = NULL;
-            char* func_name = NULL;
-            parse_qualified_name(expr->as.function_call.function_name, &module_name, &func_name);
-            
             FunctionSymbol* func = symbol_table_lookup_function(table, expr->as.function_call.function_name);
             
             if (!func) {
                 char msg[256];
-                if (module_name) {
-                    snprintf(msg, sizeof(msg), "Module '%s' has no function '%s'", module_name, func_name);
-                } else {
-                    snprintf(msg, sizeof(msg), "Undefined function '%s'", expr->as.function_call.function_name);
-                }
+                snprintf(msg, sizeof(msg), "Undefined function '%s'", expr->as.function_call.function_name);
                 semantic_error_list_add(errors, msg, expr->location);
                 expr->resolved_type = TYPE_VOID;
-                xfree(module_name);
-                xfree(func_name);
                 return TYPE_VOID;
             }
-            
-            xfree(module_name);
-            xfree(func_name);
             
             /* Check argument count */
             if (expr->as.function_call.argument_count != func->param_count) {
@@ -454,16 +441,88 @@ static void validate_functions(ASTProgram* program, SymbolTable* table, Semantic
     }
 }
 
-/* Main semantic analysis - 2-pass */
+/* Validate that imported names only come from specified files (no collisions) */
+static void validate_import_collisions(ASTProgram* program, SemanticErrorList* errors) {
+    /* Build a map of which files provide which functions */
+    /* This catches collisions like: importing 'add' from both 'math.csm' and 'other.csm' */
+    
+    for (int i = 0; i < program->import_count; i++) {
+        ASTImportStatement* import1 = &program->imports[i];
+        
+        /* Check if any of these imported names appear in other import statements */
+        for (int j = i + 1; j < program->import_count; j++) {
+            ASTImportStatement* import2 = &program->imports[j];
+            
+            /* Check for name collisions between these two imports */
+            for (int a = 0; a < import1->name_count; a++) {
+                for (int b = 0; b < import2->name_count; b++) {
+                    if (strcmp(import1->imported_names[a], import2->imported_names[b]) == 0) {
+                        char msg[256];
+                        snprintf(msg, sizeof(msg), 
+                                 "Function '%s' imported from both '%s' and '%s'",
+                                 import1->imported_names[a], import1->file_path, import2->file_path);
+                        semantic_error_list_add(errors, msg, import2->location);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Validate that imported names actually exist as functions in the program */
+static void validate_imports(ASTProgram* program, SemanticErrorList* errors) {
+    /* Check each import statement */
+    for (int i = 0; i < program->import_count; i++) {
+        ASTImportStatement* import = &program->imports[i];
+        
+        /* For each imported name, verify it exists as a function */
+        for (int j = 0; j < import->name_count; j++) {
+            const char* imported_name = import->imported_names[j];
+            int found = 0;
+            
+            /* Look for a function with this name */
+            for (int k = 0; k < program->function_count; k++) {
+                if (strcmp(program->functions[k].name, imported_name) == 0) {
+                    found = 1;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), 
+                         "Cannot import '%s' from '%s': function not found",
+                         imported_name, import->file_path);
+                semantic_error_list_add(errors, msg, import->location);
+            }
+        }
+    }
+}
+
+/* Main semantic analysis - 4-pass */
 int analyze_program(ASTProgram* program, SymbolTable* table, SemanticErrorList* errors) {
-    /* Pass 1: Collect all function definitions */
+    /* Pass 1: Validate import collisions */
+    validate_import_collisions(program, errors);
+    
+    if (errors->error_count > 0) {
+        return 0;  /* Stop if there are errors */
+    }
+    
+    /* Pass 2: Validate imports exist */
+    validate_imports(program, errors);
+    
+    if (errors->error_count > 0) {
+        return 0;  /* Stop if there are errors */
+    }
+    
+    /* Pass 3: Collect all function definitions */
     collect_functions(program, table, errors);
     
     if (errors->error_count > 0) {
         return 0;  /* Stop if there are errors */
     }
     
-    /* Pass 2: Validate function bodies and expressions */
+    /* Pass 4: Validate function bodies and expressions */
     validate_functions(program, table, errors);
     
     return errors->error_count == 0;

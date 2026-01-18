@@ -52,13 +52,6 @@ int symbol_table_add_function(SymbolTable* table, const char* name, CasmType ret
                                CasmType* param_types, int param_count, SourceLocation location);
 FunctionSymbol* symbol_table_lookup_function(SymbolTable* table, const char* name);
 
-/* Helper to extract module and function names from qualified name (e.g., "math:add")
- * Returns module_name and function_name via pointers (both allocated)
- * If no colon, module_name is NULL and function_name is the whole string
- * Caller must free both strings
- */
-void parse_qualified_name(const char* qualified_name, char** out_module, char** out_function);
-
 /* Variable operations */
 int symbol_table_add_variable(SymbolTable* table, const char* name, CasmType type, SourceLocation location);
 VariableSymbol* symbol_table_lookup_variable(SymbolTable* table, const char* name);
