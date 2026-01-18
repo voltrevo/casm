@@ -1,0 +1,9 @@
+// Test dbg() with wrong function argument count
+i32 add(i32 a, i32 b) {
+    return a + b;
+}
+
+i32 main() {
+    dbg(add(5));
+    return 0;
+}

@@ -1,0 +1,7 @@
+// Test dbg() with type mismatch (bool + i32)
+i32 main() {
+    bool b = true;
+    i32 x = 10;
+    dbg(b + x);
+    return 0;
+}

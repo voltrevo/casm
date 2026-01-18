@@ -1,0 +1,6 @@
+// Test dbg() with uninitialized variable
+i32 main() {
+    i32 x;
+    dbg(x);
+    return 0;
+}

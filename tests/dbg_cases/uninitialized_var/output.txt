@@ -1,0 +1,1 @@
+test.csm:4:8: Variable 'x' used before initialization

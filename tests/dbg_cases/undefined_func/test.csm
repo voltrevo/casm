@@ -1,0 +1,5 @@
+// Test dbg() with undefined function call
+i32 main() {
+    dbg(undefined_func());
+    return 0;
+}
