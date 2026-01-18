@@ -11,21 +11,26 @@ echo "=========================================="
 echo "Running Casm Compiler Tests"
 echo "=========================================="
 
-# Check that test binary exists
-if [ ! -f "./test_casm" ]; then
-    echo "✗ test_casm binary not found. Run 'make build-debug' first."
+# Check that test binaries exist
+if [ ! -f "./bin/test_casm" ]; then
+    echo "✗ bin/test_casm binary not found. Run 'make build-debug' first."
     exit 1
 fi
 
-if [ ! -f "./casm" ]; then
-    echo "✗ casm binary not found. Run 'make build-debug' first."
+if [ ! -f "./bin/test_semantics" ]; then
+    echo "✗ bin/test_semantics binary not found. Run 'make build-debug' first."
+    exit 1
+fi
+
+if [ ! -f "./bin/casm" ]; then
+    echo "✗ bin/casm binary not found. Run 'make build-debug' first."
     exit 1
 fi
 
 # Run unit tests with timeout
 echo ""
 echo "Running unit tests (timeout: ${UNIT_TEST_TIMEOUT}s)..."
-if timeout ${UNIT_TEST_TIMEOUT} ./test_casm; then
+if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_casm; then
     echo "✓ Unit tests passed"
 else
     EXIT_CODE=$?
@@ -34,6 +39,22 @@ else
         exit 1
     else
         echo "✗ Unit tests failed"
+        exit 1
+    fi
+fi
+
+# Run semantics tests with timeout
+echo ""
+echo "Running semantics tests (timeout: ${UNIT_TEST_TIMEOUT}s)..."
+if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_semantics; then
+    echo "✓ Semantics tests passed"
+else
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+        echo "✗ Semantics tests timed out after ${UNIT_TEST_TIMEOUT}s"
+        exit 1
+    else
+        echo "✗ Semantics tests failed"
         exit 1
     fi
 fi
@@ -55,7 +76,7 @@ SUPPORTED_EXAMPLES=(
 for example in "${SUPPORTED_EXAMPLES[@]}"; do
     if [ -f "$example" ]; then
         echo -n "  Testing $example... "
-        if timeout ${EXAMPLE_TEST_TIMEOUT} ./casm "$example" >/dev/null 2>&1; then
+        if timeout ${EXAMPLE_TEST_TIMEOUT} ./bin/casm "$example" >/dev/null 2>&1; then
             echo "✓"
             EXAMPLES_PASSED=$((EXAMPLES_PASSED + 1))
         else

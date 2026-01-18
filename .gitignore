@@ -1,4 +1,5 @@
-# Compiled executable
+# Compiled executables
+bin/
 casm
 test_casm
 

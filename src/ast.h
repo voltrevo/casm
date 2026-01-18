@@ -176,6 +176,7 @@ struct ASTExpression {
         ASTLiteral literal;
         ASTVariable variable;
     } as;
+    CasmType resolved_type;  /* filled by semantic analyzer */
 };
 
 /* Function definition */

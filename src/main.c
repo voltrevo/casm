@@ -3,6 +3,7 @@
 #include <string.h>
 #include "lexer.h"
 #include "parser.h"
+#include "semantics.h"
 #include "utils.h"
 
 static char* read_file(const char* filename) {
@@ -130,8 +131,24 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    /* Semantic analysis */
+    SymbolTable* table = symbol_table_create();
+    SemanticErrorList* sem_errors = semantic_error_list_create();
+    
+    if (!analyze_program(program, table, sem_errors)) {
+        semantic_error_list_print(sem_errors, argv[1]);
+        semantic_error_list_free(sem_errors);
+        symbol_table_free(table);
+        ast_program_free(program);
+        parser_free(parser);
+        xfree(source);
+        return 1;
+    }
+    
     print_ast_program(program);
     
+    semantic_error_list_free(sem_errors);
+    symbol_table_free(table);
     ast_program_free(program);
     parser_free(parser);
     xfree(source);

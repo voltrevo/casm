@@ -505,6 +505,34 @@ static ASTStatement* parse_statement(Parser* parser) {
         return stmt;
     }
     
+    /* Unsupported control flow - skip to recover */
+    if (token.type == TOK_IF || token.type == TOK_WHILE || token.type == TOK_FOR) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Control flow '%s' not yet implemented", token.lexeme);
+        parser_error(parser, msg);
+        
+        /* Skip the unsupported statement to avoid infinite loop */
+        /* Advance past the keyword */
+        advance(parser);
+        
+        /* Skip to the next semicolon or closing brace */
+        int brace_depth = 0;
+        while (!check(parser, TOK_EOF)) {
+            if (check(parser, TOK_LBRACE)) {
+                brace_depth++;
+            } else if (check(parser, TOK_RBRACE)) {
+                if (brace_depth == 0) break;
+                brace_depth--;
+            } else if (check(parser, TOK_SEMICOLON) && brace_depth == 0) {
+                advance(parser);
+                break;
+            }
+            advance(parser);
+        }
+        
+        return NULL;  /* Return NULL to indicate failed parsing */
+    }
+    
     /* Variable declaration */
     if (token.type == TOK_I8 || token.type == TOK_I16 || token.type == TOK_I32 ||
         token.type == TOK_I64 || token.type == TOK_U8 || token.type == TOK_U16 ||

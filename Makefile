@@ -15,35 +15,49 @@ CFLAGS = $(CFLAGS_DEBUG)
 
 LDFLAGS = -lm
 
+# Output directory
+BIN_DIR = bin
+
 # Source files
-SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c
+SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
 TEST_SOURCES = tests/test_lexer.c src/lexer.c src/utils.c
+SEMANTICS_TEST_SOURCES = tests/test_semantics.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
 
 # Output
-MAIN_BINARY = casm
-TEST_BINARY = test_casm
+MAIN_BINARY = $(BIN_DIR)/casm
+TEST_BINARY = $(BIN_DIR)/test_casm
+SEMANTICS_TEST_BINARY = $(BIN_DIR)/test_semantics
 
 all: build
 
 build: build-debug
 
-build-debug: $(SOURCES)
-	$(CC) $(CFLAGS_DEBUG) -o $(MAIN_BINARY) $^ $(LDFLAGS)
+build-debug: $(BIN_DIR) $(SOURCES)
+	$(CC) $(CFLAGS_DEBUG) -o $(MAIN_BINARY) $(SOURCES) $(LDFLAGS)
 
-build-release: $(SOURCES)
-	$(CC) $(CFLAGS_RELEASE) -o $(MAIN_BINARY) $^ $(LDFLAGS)
+build-release: $(BIN_DIR) $(SOURCES)
+	$(CC) $(CFLAGS_RELEASE) -o $(MAIN_BINARY) $(SOURCES) $(LDFLAGS)
 
-test: build-debug $(TEST_BINARY)
+test: build-debug $(TEST_BINARY) $(SEMANTICS_TEST_BINARY)
 	./run_tests.sh
 
 unit-test: $(TEST_BINARY)
 	./$(TEST_BINARY)
 
-$(TEST_BINARY): $(TEST_SOURCES)
+semantics-test: $(SEMANTICS_TEST_BINARY)
+	./$(SEMANTICS_TEST_BINARY)
+
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
+
+$(TEST_BINARY): $(BIN_DIR) $(TEST_SOURCES)
 	$(CC) $(CFLAGS_DEBUG) -o $(TEST_BINARY) $(TEST_SOURCES) $(LDFLAGS)
 
+$(SEMANTICS_TEST_BINARY): $(BIN_DIR) $(SEMANTICS_TEST_SOURCES)
+	$(CC) $(CFLAGS_DEBUG) -o $(SEMANTICS_TEST_BINARY) $(SEMANTICS_TEST_SOURCES) $(LDFLAGS)
+
 clean:
-	rm -f $(MAIN_BINARY) $(TEST_BINARY)
+	rm -rf $(BIN_DIR)
 
 run-example: build
 	./$(MAIN_BINARY) examples/simple_add.csm
