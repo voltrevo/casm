@@ -86,15 +86,6 @@ static Token current_token(Parser* parser) {
     return eof;
 }
 
-static Token peek_token(Parser* parser, int offset) {
-    int pos = parser->current + offset;
-    if (pos < parser->token_count) {
-        return parser->tokens[pos];
-    }
-    Token eof = {TOK_EOF, "", 0, {0, 0, 0}, 0};
-    return eof;
-}
-
 static Token advance(Parser* parser) {
     Token token = current_token(parser);
     if (parser->current < parser->token_count) {
@@ -118,10 +109,6 @@ static int check(Parser* parser, TokenType type) {
 static void parser_error(Parser* parser, const char* message) {
     Token token = current_token(parser);
     error_list_add(parser->errors, message, token.location);
-}
-
-static void parser_error_at(Parser* parser, SourceLocation location, const char* message) {
-    error_list_add(parser->errors, message, location);
 }
 
 /* Forward declarations */
