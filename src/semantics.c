@@ -57,7 +57,7 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
     switch (expr->type) {
         case EXPR_LITERAL: {
             if (expr->as.literal.type == LITERAL_INT) {
-                expr->resolved_type = TYPE_I64;  /* Default int type */
+                expr->resolved_type = TYPE_I32;  /* Default int type is i32, not i64 */
             } else {
                 expr->resolved_type = TYPE_BOOL;
             }

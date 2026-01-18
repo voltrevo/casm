@@ -759,7 +759,13 @@ static char* extract_expression_name(const ASTExpression* expr) {
             return xstrdup(expr->as.variable.name);
         
         case EXPR_LITERAL: {
-            snprintf(buffer, sizeof(buffer), "%ld", expr->as.literal.value.int_value);
+            if (expr->as.literal.type == LITERAL_INT) {
+                snprintf(buffer, sizeof(buffer), "%ld", expr->as.literal.value.int_value);
+            } else if (expr->as.literal.type == LITERAL_BOOL) {
+                snprintf(buffer, sizeof(buffer), "%s", expr->as.literal.value.bool_value ? "true" : "false");
+            } else {
+                snprintf(buffer, sizeof(buffer), "literal");
+            }
             return xstrdup(buffer);
         }
         
