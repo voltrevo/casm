@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "semantics.h"
 #include "codegen.h"
+#include "codegen_wat.h"
 #include "utils.h"
 
 static char* read_file(const char* filename) {
@@ -33,7 +34,7 @@ static char* read_file(const char* filename) {
 int main(int argc, char** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s [--target=c|wat] <source.csm>\n", argv[0]);
-        fprintf(stderr, "Default target: wat (not yet implemented)\n");
+        fprintf(stderr, "Default target: wat\n");
         return 1;
     }
     
@@ -70,15 +71,6 @@ int main(int argc, char** argv) {
     
     if (parser->errors->error_count > 0) {
         error_list_print(parser->errors, source_file);
-        ast_program_free(program);
-        parser_free(parser);
-        xfree(source);
-        return 1;
-    }
-    
-    /* WAT is not yet implemented */
-    if (strcmp(target, "wat") == 0) {
-        fprintf(stderr, "Error: WAT code generation not yet implemented\n");
         ast_program_free(program);
         parser_free(parser);
         xfree(source);
@@ -134,6 +126,40 @@ int main(int argc, char** argv) {
         }
         
         printf("Generated C code: %s\n", output_file);
+    } else if (strcmp(target, "wat") == 0) {
+        /* Generate output filename if not specified */
+        char output_buffer[512];
+        if (!output_file) {
+            /* Always output to out.wat */
+            snprintf(output_buffer, sizeof(output_buffer), "out.wat");
+            output_file = output_buffer;
+        }
+        
+        FILE* out = fopen(output_file, "w");
+        if (!out) {
+            fprintf(stderr, "Error: Could not open output file '%s' for writing\n", output_file);
+            semantic_error_list_free(sem_errors);
+            symbol_table_free(table);
+            ast_program_free(program);
+            parser_free(parser);
+            xfree(source);
+            return 1;
+        }
+        
+        CodegenWatResult result = codegen_wat_program(program, out);
+        fclose(out);
+        
+        if (!result.success) {
+            fprintf(stderr, "Error: WAT code generation failed: %s\n", result.error_msg);
+            semantic_error_list_free(sem_errors);
+            symbol_table_free(table);
+            ast_program_free(program);
+            parser_free(parser);
+            xfree(source);
+            return 1;
+        }
+        
+        printf("Generated WAT code: %s\n", output_file);
     }
     
     semantic_error_list_free(sem_errors);

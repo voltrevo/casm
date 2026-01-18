@@ -19,10 +19,10 @@ LDFLAGS = -lm
 BIN_DIR = bin
 
 # Source files
-SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c
+SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c src/codegen_wat.c
 TEST_SOURCES = tests/test_lexer.c src/lexer.c src/utils.c
 SEMANTICS_TEST_SOURCES = tests/test_semantics.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
-CODEGEN_TEST_SOURCES = tests/test_codegen.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c
+CODEGEN_TEST_SOURCES = tests/test_codegen.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c src/codegen_wat.c
 
 # Output
 MAIN_BINARY = $(BIN_DIR)/casm

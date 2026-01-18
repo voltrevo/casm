@@ -5,6 +5,7 @@ test_casm
 
 # Output files
 out.c
+out.wat
 
 # Object files
 *.o
