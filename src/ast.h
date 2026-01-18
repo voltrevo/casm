@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include <stdint.h>
 #include "lexer.h"
 #include "utils.h"
 
@@ -251,6 +252,11 @@ struct ASTFunctionDef {
     int parameter_count;
     ASTBlock body;
     SourceLocation location;
+    /* Symbol deduplication fields */
+    uint32_t symbol_id;         /* Unique identifier (assigned during merge) */
+    char* original_name;        /* Name before deduplication */
+    char* module_path;          /* Source file path (e.g., "module_a.csm") */
+    char* allocated_name;       /* Final resolved name (NULL if not allocated/dead code) */
 };
 
 /* Import statement */

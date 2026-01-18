@@ -390,6 +390,7 @@ static void analyze_block(ASTBlock* block, SymbolTable* table, CasmType return_t
 
 /* Pass 1: Collect all function definitions */
 static void collect_functions(ASTProgram* program, SymbolTable* table, SemanticErrorList* errors) {
+    (void)errors;  /* No longer used after Phase 3 - collision errors are removed */
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
         
@@ -402,13 +403,11 @@ static void collect_functions(ASTProgram* program, SymbolTable* table, SemanticE
             }
         }
         
-        /* Add function to symbol table */
-        if (!symbol_table_add_function(table, func->name, func->return_type.type, 
-                                       param_types, func->parameter_count, func->location)) {
-            char msg[256];
-            snprintf(msg, sizeof(msg), "Function '%s' already defined", func->name);
-            semantic_error_list_add(errors, msg, func->location);
-        }
+        /* Add function to symbol table 
+         * Note: With symbol IDs, we allow multiple functions with the same name
+         * from different modules. The duplicate check is now obsolete. */
+        symbol_table_add_function(table, func->name, func->return_type.type, 
+                                  param_types, func->parameter_count, func->location);
         
         if (param_types) {
             xfree(param_types);
@@ -442,31 +441,14 @@ static void validate_functions(ASTProgram* program, SymbolTable* table, Semantic
 }
 
 /* Validate that imported names only come from specified files (no collisions) */
+/* Validate that imported names are not colliding from different sources
+ * NOTE: This validation is disabled as of Phase 3 of symbol deduplication.
+ * We now allow functions with the same name from different modules.
+ * The symbol ID-based linking will disambiguate them during code generation. */
 static void validate_import_collisions(ASTProgram* program, SemanticErrorList* errors) {
-    /* Build a map of which files provide which functions */
-    /* This catches collisions like: importing 'add' from both 'math.csm' and 'other.csm' */
-    
-    for (int i = 0; i < program->import_count; i++) {
-        ASTImportStatement* import1 = &program->imports[i];
-        
-        /* Check if any of these imported names appear in other import statements */
-        for (int j = i + 1; j < program->import_count; j++) {
-            ASTImportStatement* import2 = &program->imports[j];
-            
-            /* Check for name collisions between these two imports */
-            for (int a = 0; a < import1->name_count; a++) {
-                for (int b = 0; b < import2->name_count; b++) {
-                    if (strcmp(import1->imported_names[a], import2->imported_names[b]) == 0) {
-                        char msg[256];
-                        snprintf(msg, sizeof(msg), 
-                                 "Function '%s' imported from both '%s' and '%s'",
-                                 import1->imported_names[a], import1->file_path, import2->file_path);
-                        semantic_error_list_add(errors, msg, import2->location);
-                    }
-                }
-            }
-        }
-    }
+    (void)program;  /* Unused */
+    (void)errors;   /* Unused */
+    /* Collision validation disabled - see comment above */
 }
 
 /* Validate that imported names actually exist as functions in the program */

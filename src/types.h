@@ -17,6 +17,11 @@ struct FunctionSymbol {
     CasmType* param_types;
     int param_count;
     SourceLocation location;
+    /* Symbol deduplication fields */
+    uint32_t symbol_id;      /* Unique identifier for this function */
+    char* original_name;     /* Original function name */
+    char* module_path;       /* Where it came from */
+    char* allocated_name;    /* Final name in generated code (NULL if dead code) */
 };
 
 /* Variable symbol - stores variable metadata */

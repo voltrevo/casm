@@ -8,6 +8,9 @@
 #include <limits.h>
 #include <unistd.h>
 
+/* Global symbol ID counter for symbol deduplication */
+static uint32_t g_next_symbol_id = 1000;
+
 ModuleCache* module_cache_create(void) {
     ModuleCache* cache = xmalloc(sizeof(ModuleCache));
     cache->modules = NULL;
@@ -273,6 +276,9 @@ static LoadedModule* module_cache_load_internal(ModuleCache* cache,
 }
 
 ASTProgram* build_complete_ast(const char* main_file, char** out_error) {
+    /* Reset global symbol ID counter for each compilation */
+    g_next_symbol_id = 1000;
+    
     ModuleCache* cache = module_cache_create();
     
     /* Resolve main file to absolute path */
@@ -381,6 +387,12 @@ ASTProgram* build_complete_ast(const char* main_file, char** out_error) {
                 dst_func->body = src_func->body;
                 /* Note: we're sharing the statements array, not copying it
                  * This is okay as long as we don't modify the original AST */
+                
+                /* Assign symbol deduplication metadata */
+                dst_func->symbol_id = g_next_symbol_id++;
+                dst_func->original_name = xstrdup(src_func->name);
+                dst_func->module_path = xstrdup(cache->modules[i].absolute_path);
+                dst_func->allocated_name = NULL;  /* Will be set in Phase 5 */
             }
         }
     }
@@ -403,6 +415,9 @@ void ast_program_free_merged(ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
         xfree(func->name);
+        xfree(func->original_name);
+        xfree(func->module_path);
+        xfree(func->allocated_name);
         for (int j = 0; j < func->parameter_count; j++) {
             ast_parameter_free(&func->parameters[j]);
         }

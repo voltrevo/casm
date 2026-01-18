@@ -97,12 +97,20 @@ ASTFunctionDef* ast_function_create(const char* name, TypeNode return_type, Sour
     func->body.statement_count = 0;
     func->body.location = location;
     func->location = location;
+    /* Initialize symbol deduplication fields */
+    func->symbol_id = 0;
+    func->original_name = NULL;
+    func->module_path = NULL;
+    func->allocated_name = NULL;
     return func;
 }
 
 void ast_function_free(ASTFunctionDef* func) {
     if (!func) return;
     xfree(func->name);
+    xfree(func->original_name);
+    xfree(func->module_path);
+    xfree(func->allocated_name);
     for (int i = 0; i < func->parameter_count; i++) {
         ast_parameter_free(&func->parameters[i]);
     }

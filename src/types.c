@@ -54,12 +54,8 @@ void symbol_table_free(SymbolTable* table) {
 /* Add a function to the symbol table */
 int symbol_table_add_function(SymbolTable* table, const char* name, CasmType return_type,
                                CasmType* param_types, int param_count, SourceLocation location) {
-    /* Check for duplicates */
-    for (int i = 0; i < table->function_count; i++) {
-        if (strcmp(table->functions[i].name, name) == 0) {
-            return 0;  /* Duplicate function */
-        }
-    }
+    /* As of Phase 3, we allow multiple functions with the same name from different modules.
+     * The duplicate check is removed. Symbol IDs will disambiguate them later. */
     
     /* Expand if needed */
     if (table->function_count >= table->function_capacity) {
@@ -75,6 +71,12 @@ int symbol_table_add_function(SymbolTable* table, const char* name, CasmType ret
     func->param_count = param_count;
     func->location = location;
     
+    /* Initialize symbol deduplication fields */
+    func->symbol_id = 0;          /* Will be set from ASTFunctionDef during codegen */
+    func->original_name = NULL;   /* Will be set from ASTFunctionDef */
+    func->module_path = NULL;     /* Will be set from ASTFunctionDef */
+    func->allocated_name = NULL;  /* Will be set in Phase 5 */
+    
     if (param_count > 0) {
         func->param_types = xmalloc(param_count * sizeof(CasmType));
         memcpy(func->param_types, param_types, param_count * sizeof(CasmType));
@@ -83,7 +85,7 @@ int symbol_table_add_function(SymbolTable* table, const char* name, CasmType ret
     }
     
     table->function_count++;
-    return 1;  /* Success */
+    return 1;  /* Always success now */
 }
 
 /* Look up a function */
