@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
     ASTProgram* program = parser_parse(parser);
     
     if (parser->errors->error_count > 0) {
-        error_list_print(parser->errors);
+        error_list_print(parser->errors, argv[1]);
         parser_free(parser);
         xfree(source);
         return 1;

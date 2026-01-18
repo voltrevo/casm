@@ -20,7 +20,7 @@ typedef struct {
 ErrorList* error_list_create(void);
 void error_list_free(ErrorList* errors);
 void error_list_add(ErrorList* errors, const char* message, SourceLocation location);
-void error_list_print(ErrorList* errors);
+void error_list_print(ErrorList* errors, const char* filename);
 
 /* Parser state */
 typedef struct {

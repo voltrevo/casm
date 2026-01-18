@@ -32,11 +32,11 @@ void error_list_add(ErrorList* errors, const char* message, SourceLocation locat
     errors->error_count++;
 }
 
-void error_list_print(ErrorList* errors) {
+void error_list_print(ErrorList* errors, const char* filename) {
     for (int i = 0; i < errors->error_count; i++) {
         ParseError* err = &errors->errors[i];
-        fprintf(stderr, "Error at line %d, column %d: %s\n",
-                err->location.line, err->location.column, err->message);
+        fprintf(stderr, "%s:%d:%d: %s\n",
+                filename, err->location.line, err->location.column, err->message);
     }
 }
 
@@ -612,6 +612,7 @@ static void parse_block(Parser* parser, ASTBlock* out_block) {
 
 /* Parse a function definition - fills in provided struct */
 static int parse_function(Parser* parser, ASTFunctionDef* out_func) {
+    int error_count_before = parser->errors->error_count;
     Token token = current_token(parser);
     
     /* Parse return type */
@@ -664,7 +665,16 @@ static int parse_function(Parser* parser, ASTFunctionDef* out_func) {
                   param_token.type == TOK_U32 || param_token.type == TOK_U64 ||
                   param_token.type == TOK_BOOL || param_token.type == TOK_VOID)) {
                 parser_error(parser, "Expected type in parameter list");
-                break;
+                /* Skip to next comma or close paren */
+                while (!check(parser, TOK_COMMA) && !check(parser, TOK_RPAREN) && !check(parser, TOK_EOF)) {
+                    advance(parser);
+                }
+                if (check(parser, TOK_COMMA)) {
+                    advance(parser);
+                    continue;
+                } else {
+                    break;
+                }
             }
             
             TypeNode param_type;
@@ -704,7 +714,8 @@ static int parse_function(Parser* parser, ASTFunctionDef* out_func) {
     /* Parse function body */
     parse_block(parser, &out_func->body);
     
-    return 1;
+    /* Return success only if no errors were added during this function */
+    return parser->errors->error_count == error_count_before;
 }
 
 /* Main parsing function */
