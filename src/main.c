@@ -63,12 +63,6 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    /* WAT is not yet implemented */
-    if (strcmp(target, "wat") == 0) {
-        fprintf(stderr, "Error: WAT code generation not yet implemented\n");
-        return 1;
-    }
-    
     char* source = read_file(source_file);
     Parser* parser = parser_create(source);
     
@@ -76,6 +70,15 @@ int main(int argc, char** argv) {
     
     if (parser->errors->error_count > 0) {
         error_list_print(parser->errors, source_file);
+        ast_program_free(program);
+        parser_free(parser);
+        xfree(source);
+        return 1;
+    }
+    
+    /* WAT is not yet implemented */
+    if (strcmp(target, "wat") == 0) {
+        fprintf(stderr, "Error: WAT code generation not yet implemented\n");
         ast_program_free(program);
         parser_free(parser);
         xfree(source);

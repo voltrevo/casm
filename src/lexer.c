@@ -3,6 +3,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
 
 static int is_at_end(Lexer* lexer) {
     return lexer->current >= lexer->source_len;
@@ -98,9 +101,24 @@ static Token scan_number(Lexer* lexer) {
     token.location.line = line;
     token.location.column = start_col;
     
-    /* Parse the integer value */
-    sscanf(token.lexeme, "%ld", &token.int_value);
+    /* Parse the integer value using strtoll with overflow detection */
+    char* numstr = xmalloc(length + 1);
+    strncpy(numstr, token.lexeme, length);
+    numstr[length] = '\0';
     
+    errno = 0;
+    char* endptr = NULL;
+    long parsed = strtoll(numstr, &endptr, 10);
+    
+    if (errno == ERANGE) {
+        /* Overflow occurred - set to max/min value and mark as error */
+        token.type = TOK_ERROR;
+        token.int_value = parsed;
+    } else {
+        token.int_value = parsed;
+    }
+    
+    xfree(numstr);
     return token;
 }
 

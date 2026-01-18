@@ -50,6 +50,9 @@ Parser* parser_create(const char* source) {
     parser->tokens = xmalloc(capacity * sizeof(Token));
     parser->token_count = 0;
     
+    parser->current = 0;
+    parser->errors = error_list_create();
+    
     Token token;
     do {
         if (parser->token_count >= capacity) {
@@ -59,12 +62,15 @@ Parser* parser_create(const char* source) {
         
         token = lexer_next_token(lexer);
         parser->tokens[parser->token_count++] = token;
-    } while (token.type != TOK_EOF && token.type != TOK_ERROR);
+        
+        /* Report lexer errors immediately */
+        if (token.type == TOK_ERROR) {
+            error_list_add(parser->errors, "Integer overflow: value too large", token.location);
+            /* Continue lexing to get EOF */
+        }
+    } while (token.type != TOK_EOF);
     
     lexer_free(lexer);
-    
-    parser->current = 0;
-    parser->errors = error_list_create();
     
     return parser;
 }
@@ -491,10 +497,18 @@ static ASTBlock* parse_block_stmt(Parser* parser) {
     
     /* Parse statements until we hit } or EOF */
     while (!check(parser, TOK_RBRACE) && !check(parser, TOK_EOF)) {
+        /* Stop if we hit a lexer error token */
+        if (check(parser, TOK_ERROR)) {
+            break;
+        }
+        
         ASTStatement* stmt = parse_statement(parser);
         if (stmt) {
             ast_block_add_statement(block, *stmt);
             xfree(stmt);  /* Free the heap-allocated statement since we copied it */
+        } else {
+            /* Statement failed to parse - skip one token for error recovery */
+            advance(parser);
         }
     }
     
@@ -853,6 +867,11 @@ static void parse_block(Parser* parser, ASTBlock* out_block) {
     out_block->statements = xmalloc(stmt_capacity * sizeof(ASTStatement));
     
     while (!check(parser, TOK_RBRACE) && !check(parser, TOK_EOF)) {
+        /* Stop if we hit a lexer error token */
+        if (check(parser, TOK_ERROR)) {
+            break;
+        }
+        
         ASTStatement* stmt = parse_statement(parser);
         if (stmt) {
             if (out_block->statement_count >= stmt_capacity) {
@@ -864,6 +883,9 @@ static void parse_block(Parser* parser, ASTBlock* out_block) {
              out_block->statement_count++;
              /* Free the wrapper struct but NOT its contents (they're now owned by block) */
              xfree(stmt);
+        } else {
+            /* Statement failed to parse - skip one token for error recovery */
+            advance(parser);
         }
     }
     
@@ -988,6 +1010,11 @@ ASTProgram* parser_parse(Parser* parser) {
     program->functions = xmalloc(func_capacity * sizeof(ASTFunctionDef));
     
     while (!check(parser, TOK_EOF)) {
+        /* Stop if we encounter a lexer error */
+        if (check(parser, TOK_ERROR)) {
+            break;
+        }
+        
         if (program->function_count >= func_capacity) {
             func_capacity *= 2;
             program->functions = xrealloc(program->functions, func_capacity * sizeof(ASTFunctionDef));
@@ -998,8 +1025,9 @@ ASTProgram* parser_parse(Parser* parser) {
             program->functions[program->function_count] = temp_func;
             program->function_count++;
         } else {
-            /* Function failed to parse - clean up the partial function */
+            /* Function failed to parse - clean up the partial function and skip to next */
             ast_function_free(&temp_func);
+            advance(parser); /* Skip the problematic token */
         }
     }
     
