@@ -1,6 +1,0 @@
-// Issue #9: Broken and Unused lexer_peek_token()
-// The function was broken and never called anywhere in the codebase.
-// It had a comment acknowledging it doesn't work properly.
-// The parser uses a local check() helper function instead.
-// This function has been removed as part of dead code cleanup.
-// No example program can trigger this - it's dead code that was removed.

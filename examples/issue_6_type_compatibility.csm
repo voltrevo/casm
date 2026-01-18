@@ -1,11 +1,6 @@
-// Issue #6: Type System - Overly Broad Signed/Unsigned Compatibility
-// All signed integers are considered compatible with each other.
-// This means i8 is compatible with i64, allowing dangerous assignments.
-// An i64 value assigned to an i8 will silently overflow.
-// The type system should be stricter or at least warn on range-reducing assignments.
-
+// Issue #6: Type compatibility too permissive
 i32 main() {
     i64 large = 1000000000000;
-    i8 small = large;  // Silent overflow - should warn or error
+    i8 small = large;
     return small;
 }
