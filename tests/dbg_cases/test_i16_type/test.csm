@@ -1,0 +1,12 @@
+i32 add_i16(i16 a, i16 b) {
+    i32 result = a + b;
+    return result;
+}
+
+i32 main() {
+    i16 x = 10;
+    i16 y = 20;
+    i32 result = add_i16(x, y);
+    dbg(result);
+    return 0;
+}

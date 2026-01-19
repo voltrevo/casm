@@ -1,0 +1,13 @@
+i32 main() {
+    bool b1 = true;
+    bool b2 = false;
+    bool b3 = b1 && b2;
+    bool b4 = b1 || b2;
+    bool b5 = !b1;
+    bool b6 = !b2;
+    dbg(b3);
+    dbg(b4);
+    dbg(b5);
+    dbg(b6);
+    return 0;
+}

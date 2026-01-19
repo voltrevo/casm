@@ -1,0 +1,4 @@
+test.csm:8:4: b3 = false
+test.csm:9:4: b4 = true
+test.csm:10:4: b5 = false
+test.csm:11:4: b6 = true

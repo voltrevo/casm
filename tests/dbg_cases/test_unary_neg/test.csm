@@ -1,0 +1,6 @@
+i32 main() {
+    i32 x = 5;
+    i32 result = -x;
+    dbg(result);
+    return 0;
+}

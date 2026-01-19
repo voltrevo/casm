@@ -1,0 +1,15 @@
+i32 main() {
+    i32 x = 5;
+    i32 y = 3;
+    i32 a = x + y;
+    i32 b = x - y;
+    i32 c = x * y;
+    i32 d = x / y;
+    i32 e = x % y;
+    dbg(a);
+    dbg(b);
+    dbg(c);
+    dbg(d);
+    dbg(e);
+    return 0;
+}

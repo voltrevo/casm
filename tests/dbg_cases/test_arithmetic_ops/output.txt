@@ -1,0 +1,5 @@
+test.csm:9:4: a = 8
+test.csm:10:4: b = 2
+test.csm:11:4: c = 15
+test.csm:12:4: d = 1
+test.csm:13:4: e = 2

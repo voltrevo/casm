@@ -1,0 +1,17 @@
+i32 main() {
+    i32 x = 10;
+    i32 y = 5;
+    bool b1 = x > y;
+    bool b2 = x < y;
+    bool b3 = x == y;
+    bool b4 = x != y;
+    bool b5 = x >= y;
+    bool b6 = x <= y;
+    dbg(b1);
+    dbg(b2);
+    dbg(b3);
+    dbg(b4);
+    dbg(b5);
+    dbg(b6);
+    return 0;
+}
