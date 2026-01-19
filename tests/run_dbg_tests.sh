@@ -33,8 +33,9 @@ if ! python3 -c "import wasmtime" 2>/dev/null; then
     exit 1
 fi
 
-# Find all dbg test directories
-for test_dir in tests/dbg_cases/*/; do
+# Find all dbg test directories (recursively find directories containing test.csm)
+while IFS= read -r test_file; do
+    test_dir=$(dirname "$test_file")
     test_name=$(basename "$test_dir")
     test_file="${test_dir%/}/test.csm"
     output_file="${test_dir%/}/output.txt"
@@ -45,11 +46,6 @@ for test_dir in tests/dbg_cases/*/; do
     is_known_failure=false
     if [ -f "$known_failure_file" ]; then
         is_known_failure=true
-    fi
-    
-    if [ ! -f "$test_file" ]; then
-        echo "  Skipping $test_name (no test.csm)"
-        continue
     fi
     
     if [ ! -f "$output_file" ]; then
@@ -237,7 +233,7 @@ for test_dir in tests/dbg_cases/*/; do
     
     # Return to original directory
     cd "$ORIG_DIR"
-done
+done < <(find tests/dbg_cases -name "test.csm" -type f)
 
 echo ""
 echo "DBG Test Results: $PASSED passed, $FAILED failed, $KNOWN_FAILURES known failures"
