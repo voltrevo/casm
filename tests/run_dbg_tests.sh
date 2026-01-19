@@ -13,7 +13,6 @@
 set -e
 
 DBG_TEST_TIMEOUT=2
-CASM_BIN="../../../bin/casm"
 PASSED=0
 FAILED=0
 KNOWN_FAILURES=0
@@ -21,7 +20,10 @@ KNOWN_FAILURES=0
 # Save original directory
 ORIG_DIR=$(pwd)
 
-if [ ! -f "$ORIG_DIR/bin/casm" ]; then
+# Calculate path to binary relative to script location
+CASM_BIN="$ORIG_DIR/bin/casm"
+
+if [ ! -f "$CASM_BIN" ]; then
     echo "✗ bin/casm binary not found. Run 'make' first."
     exit 1
 fi
