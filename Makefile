@@ -90,12 +90,10 @@ help:
 	@echo "  coverage-dbg-only - Run only DBG tests with branch coverage reporting"
 	@echo "  help            - Show this help message"
 
-coverage: clean build-debug
-	@echo "Running full test suite with coverage instrumentation..."
-	./run_tests.sh
+coverage: clean test
 	bash ./coverage.sh
 
-coverage-dbg-only: clean build-debug
+coverage-dbg-only: clean build-debug $(MAIN_BINARY)
 	@echo "Running DBG tests with coverage instrumentation..."
 	bash ./tests/run_dbg_tests.sh
 	bash ./coverage.sh
