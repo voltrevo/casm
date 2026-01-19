@@ -1,4 +1,4 @@
-.PHONY: all clean test build build-release build-debug test help run-example coverage coverage-dbg-only
+.PHONY: all clean test build build-release build-debug test help run-example
 
 CC = gcc
 
@@ -83,17 +83,7 @@ help:
 	@echo "  build           - Build the compiler (debug with sanitizers)"
 	@echo "  build-debug     - Build debug version with sanitizers"
 	@echo "  build-release   - Build optimized release version"
-	@echo "  test            - Run unit tests"
+	@echo "  test            - Run unit tests (includes branch coverage report)"
 	@echo "  clean           - Remove built files"
 	@echo "  run-example     - Compile and run an example"
-	@echo "  coverage        - Run full test suite with branch coverage reporting"
-	@echo "  coverage-dbg-only - Run only DBG tests with branch coverage reporting"
 	@echo "  help            - Show this help message"
-
-coverage: clean test
-	bash ./coverage.sh
-
-coverage-dbg-only: clean build-debug $(MAIN_BINARY)
-	@echo "Running DBG tests with coverage instrumentation..."
-	bash ./tests/run_dbg_tests.sh
-	bash ./coverage.sh

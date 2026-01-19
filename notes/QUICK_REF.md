@@ -4,28 +4,24 @@
 
 ```bash
 make build              # Debug build with sanitizers
-make test               # Build and run all tests
+make test               # Build and run all tests (includes coverage report)
 make clean              # Remove binaries
 ```
 
 ## Code Coverage
 
+Coverage is collected automatically during `make test` when DBG tests run. The branch coverage report is printed at the end of testing.
+
+View the detailed HTML report:
 ```bash
-make coverage           # Full test suite with branch coverage report
-make coverage-dbg-only  # DBG tests only with coverage report
+firefox coverage_report/index.html
 ```
 
-After running coverage, view the detailed report:
-```bash
-firefox coverage_report/index.html   # Or use your preferred browser
-```
-
-Coverage Summary (printed after each run):
-- Branch Coverage: % of code branches executed
-- Line Coverage: % of lines executed
-- Function Coverage: % of functions called
-
-See `coverage_report/index.html` for line-by-line coverage with branch indicators.
+The report shows:
+- **Branch Coverage %**: Primary metric - % of code branches executed
+- **Line Coverage %**: % of lines executed  
+- **Function Coverage %**: % of functions called
+- Per-file statistics with line-by-line coverage detail
 
 ## Running Examples
 

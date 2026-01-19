@@ -138,6 +138,8 @@ done
 # Run dbg tests with timeout
 echo ""
 echo "Running dbg tests (timeout: 2s per test)..."
+echo "Cleaning coverage data before DBG tests..."
+find ./bin -name "*.gcda" -delete 2>/dev/null || true
 if timeout 30 tests/run_dbg_tests.sh; then
     DBG_TEST_RESULT="PASSED"
     echo "✓ DBG tests passed"

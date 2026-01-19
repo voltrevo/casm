@@ -242,6 +242,75 @@ done
 echo ""
 echo "DBG Test Results: $PASSED passed, $FAILED failed, $KNOWN_FAILURES known failures"
 
+# Collect and report coverage
+echo ""
+echo "=========================================="
+echo "Collecting Coverage Data"
+echo "=========================================="
+
+COVERAGE_DIR="$ORIG_DIR/coverage_report"
+COVERAGE_INFO="$COVERAGE_DIR/coverage.info"
+mkdir -p "$COVERAGE_DIR"
+
+# Remove old coverage info file
+rm -f "$COVERAGE_INFO" 2>/dev/null || true
+
+# Collect coverage data from .gcda files
+echo "Collecting branch coverage metrics..."
+if lcov --capture \
+  --directory "$ORIG_DIR/bin" \
+  --output-file "$COVERAGE_INFO" \
+  --branch-coverage \
+  2>/dev/null; then
+  
+  # Extract overall statistics from coverage.info
+  lines_hit=$(grep "^LH:" "$COVERAGE_INFO" | awk -F: '{s+=$2} END {print s}')
+  lines_total=$(grep "^LF:" "$COVERAGE_INFO" | awk -F: '{s+=$2} END {print s}')
+  branches_hit=$(grep "^BRH:" "$COVERAGE_INFO" | awk -F: '{s+=$2} END {print s}')
+  branches_total=$(grep "^BRF:" "$COVERAGE_INFO" | awk -F: '{s+=$2} END {print s}')
+  functions_hit=$(grep "^FNH:" "$COVERAGE_INFO" | awk -F: '{s+=$2} END {print s}')
+  functions_total=$(grep "^FNF:" "$COVERAGE_INFO" | awk -F: '{s+=$2} END {print s}')
+  
+  # Calculate percentages
+  calc_percent() {
+    local hit=$1
+    local total=$2
+    if [ "$total" -eq 0 ] || [ -z "$total" ]; then
+      echo "0.0"
+    else
+      awk "BEGIN {printf \"%.1f\", ($hit * 100.0) / $total}"
+    fi
+  }
+  
+  branch_pct=$(calc_percent "$branches_hit" "$branches_total")
+  line_pct=$(calc_percent "$lines_hit" "$lines_total")
+  function_pct=$(calc_percent "$functions_hit" "$functions_total")
+  
+  echo ""
+  echo "=========================================="
+  echo "       COVERAGE REPORT - BRANCH COVERAGE"
+  echo "=========================================="
+  echo ""
+  echo "Branch Coverage:     $branch_pct%  ($branches_hit / $branches_total branches)"
+  echo "Line Coverage:       $line_pct%   ($lines_hit / $lines_total lines)"
+  echo "Function Coverage:   $function_pct%  ($functions_hit / $functions_total functions)"
+  echo ""
+  echo "HTML Report:   $COVERAGE_DIR/index.html"
+  echo "=========================================="
+  echo ""
+  
+  # Generate HTML report
+  genhtml "$COVERAGE_INFO" \
+    --output-directory "$COVERAGE_DIR" \
+    --branch-coverage \
+    --highlight \
+    --legend \
+    --title "Casm Compiler - Branch Coverage Report (DBG Tests)" \
+    2>/dev/null || true
+else
+  echo "Warning: Could not collect coverage data"
+fi
+
 if [ $FAILED -gt 0 ]; then
     exit 1
 fi
