@@ -35,8 +35,10 @@ fi
 # Run unit tests with timeout
 echo ""
 echo "Running unit tests (timeout: ${UNIT_TEST_TIMEOUT}s)..."
-if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_casm; then
+unit_output=$(mktemp)
+if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_casm >"$unit_output" 2>&1; then
     echo "✓ Unit tests passed"
+    cat "$unit_output"
 else
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -44,15 +46,20 @@ else
         exit 1
     else
         echo "✗ Unit tests failed"
+        echo "Error output:"
+        cat "$unit_output"
         exit 1
     fi
 fi
+rm -f "$unit_output"
 
 # Run semantics tests with timeout
 echo ""
 echo "Running semantics tests (timeout: ${UNIT_TEST_TIMEOUT}s)..."
-if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_semantics; then
+semantics_output=$(mktemp)
+if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_semantics >"$semantics_output" 2>&1; then
     echo "✓ Semantics tests passed"
+    cat "$semantics_output"
 else
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -60,15 +67,20 @@ else
         exit 1
     else
         echo "✗ Semantics tests failed"
+        echo "Error output:"
+        cat "$semantics_output"
         exit 1
     fi
 fi
+rm -f "$semantics_output"
 
 # Run codegen tests with timeout
 echo ""
 echo "Running codegen tests (timeout: ${UNIT_TEST_TIMEOUT}s)..."
-if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_codegen; then
+codegen_output=$(mktemp)
+if timeout ${UNIT_TEST_TIMEOUT} ./bin/test_codegen >"$codegen_output" 2>&1; then
     echo "✓ Codegen tests passed"
+    cat "$codegen_output"
 else
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -76,9 +88,12 @@ else
         exit 1
     else
         echo "✗ Codegen tests failed"
+        echo "Error output:"
+        cat "$codegen_output"
         exit 1
     fi
 fi
+rm -f "$codegen_output"
 
 # Test supported examples (those without unsupported control flow)
 echo ""
@@ -100,17 +115,22 @@ SUPPORTED_EXAMPLES=(
 for example in "${SUPPORTED_EXAMPLES[@]}"; do
     if [ -f "$example" ]; then
         echo -n "  Testing $example... "
-        if timeout ${EXAMPLE_TEST_TIMEOUT} ./bin/casm --target=c "$example" >/dev/null 2>&1; then
+        error_output=$(mktemp)
+        if timeout ${EXAMPLE_TEST_TIMEOUT} ./bin/casm --target=c "$example" >"$error_output" 2>&1; then
             echo "✓"
             EXAMPLES_PASSED=$((EXAMPLES_PASSED + 1))
+            rm -f "$error_output"
         else
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 124 ]; then
                 echo "✗ (timeout)"
             else
                 echo "✗ (failed)"
+                echo "    Error output:"
+                sed 's/^/    /' "$error_output"
             fi
             EXAMPLES_FAILED=$((EXAMPLES_FAILED + 1))
+            rm -f "$error_output"
         fi
     fi
 done
@@ -121,6 +141,7 @@ echo "Running dbg tests (timeout: 2s per test)..."
 if timeout 30 tests/run_dbg_tests.sh > /tmp/dbg_test_output.txt 2>&1; then
     DBG_TEST_RESULT="PASSED"
     echo "✓ DBG tests passed"
+    cat /tmp/dbg_test_output.txt
 else
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -129,8 +150,8 @@ else
     else
         echo "✗ DBG tests failed"
         DBG_TEST_RESULT="FAILED"
-        cat /tmp/dbg_test_output.txt
     fi
+    cat /tmp/dbg_test_output.txt
 fi
 
 echo ""

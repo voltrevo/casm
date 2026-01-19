@@ -2,6 +2,27 @@
 
 Casm is a C-like language compiler written in C. It compiles `.csm` sources to wasm (wat format), and C.
 
+## Requirements
+
+- **Build:** `gcc` with C99 support
+- **Testing:** `wasmtime` (required for WAT code validation)
+
+### Installing wasmtime
+
+wasmtime is required to run the full test suite. Install it using:
+
+```bash
+curl https://wasmtime.dev/install.sh -sSf | bash
+```
+
+Then add it to your PATH (the installer typically does this automatically):
+
+```bash
+export PATH="$HOME/.wasmtime/bin:$PATH"
+```
+
+For more details, see: https://docs.wasmtime.dev/cli-installing.html
+
 ## Quick Start
 
 ```bash

@@ -25,6 +25,19 @@ if [ ! -f "$ORIG_DIR/bin/casm" ]; then
     exit 1
 fi
 
+# Wasmtime is required for validating WAT code execution
+if ! command -v wasmtime &> /dev/null; then
+    echo "✗ wasmtime is required but not found."
+    echo "  wasmtime is needed to validate WebAssembly Text (WAT) code generation and execution."
+    echo ""
+    echo "  Installation options:"
+    echo "    1. Visit https://docs.wasmtime.dev/cli-installing.html for installation instructions"
+    echo "    2. Or run: curl https://wasmtime.dev/install.sh -sSf | bash"
+    echo ""
+    echo "  After installation, ensure 'wasmtime' is in your PATH."
+    exit 1
+fi
+
 # Find all dbg test directories
 for test_dir in tests/dbg_cases/*/; do
     test_name=$(basename "$test_dir")
@@ -66,6 +79,10 @@ for test_dir in tests/dbg_cases/*/; do
             PASSED=$((PASSED + 1))
         else
             echo "✗ (compile error output mismatch)"
+            echo "      Expected:"
+            echo "$expected_output" | sed 's/^/        /'
+            echo "      Got:"
+            echo "$actual_output" | sed 's/^/        /'
             FAILED=$((FAILED + 1))
         fi
         cd "$ORIG_DIR"
@@ -78,6 +95,10 @@ for test_dir in tests/dbg_cases/*/; do
         actual_c=$(cat "$generated_c")
         if [ "$expected_c" != "$actual_c" ]; then
             echo "✗ (C code mismatch)"
+            echo "      Expected first 20 lines of out.c:"
+            head -20 "out.c" | sed 's/^/        /'
+            echo "      Got first 20 lines:"
+            head -20 "$generated_c" | sed 's/^/        /'
             FAILED=$((FAILED + 1))
             cd "$ORIG_DIR"
             continue
@@ -89,6 +110,8 @@ for test_dir in tests/dbg_cases/*/; do
     
     if ! timeout ${DBG_TEST_TIMEOUT} gcc -Wall -Wextra -pedantic -std=c99 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer "$generated_c" -o "$executable" -lm 2>&1 > "$temp_dir/gcc_output.txt"; then
         echo "✗ (C compilation failed)"
+        echo "      GCC error output:"
+        cat "$temp_dir/gcc_output.txt" | sed 's/^/        /'
         FAILED=$((FAILED + 1))
         cd "$ORIG_DIR"
         continue
@@ -113,6 +136,10 @@ for test_dir in tests/dbg_cases/*/; do
     
     if [ "$expected_output" != "$actual_output" ]; then
         echo "✗ (output mismatch)"
+        echo "      Expected output:"
+        echo "$expected_output" | sed 's/^/        /'
+        echo "      Got output:"
+        echo "$actual_output" | sed 's/^/        /'
         FAILED=$((FAILED + 1))
         cd "$ORIG_DIR"
         continue
@@ -120,8 +147,11 @@ for test_dir in tests/dbg_cases/*/; do
     
     # Step 6: Validate WAT code matches expected
     generated_wat="$temp_dir/generated.wat"
-    if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=wat --output="$generated_wat" "test.csm" > /dev/null 2>&1; then
+    wat_compile_output="$temp_dir/wat_compile_output.txt"
+    if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=wat --output="$generated_wat" "test.csm" > "$wat_compile_output" 2>&1; then
         echo "✗ (WAT compilation failed)"
+        echo "      Compilation error:"
+        cat "$wat_compile_output" | sed 's/^/        /'
         FAILED=$((FAILED + 1))
         cd "$ORIG_DIR"
         continue
@@ -132,6 +162,10 @@ for test_dir in tests/dbg_cases/*/; do
         actual_wat=$(cat "$generated_wat")
         if [ "$expected_wat" != "$actual_wat" ]; then
             echo "✗ (WAT code mismatch)"
+            echo "      Expected first 20 lines of out.wat:"
+            head -20 "out.wat" | sed 's/^/        /'
+            echo "      Got first 20 lines:"
+            head -20 "$generated_wat" | sed 's/^/        /'
             FAILED=$((FAILED + 1))
             cd "$ORIG_DIR"
             continue
@@ -139,13 +173,14 @@ for test_dir in tests/dbg_cases/*/; do
     fi
     
     # Step 7: Execute WAT and verify it doesn't crash
-    if command -v wasmtime &> /dev/null; then
-        if ! timeout ${DBG_TEST_TIMEOUT} wasmtime "$generated_wat" --invoke main > /dev/null 2>&1; then
-            echo "✗ (WAT execution failed)"
-            FAILED=$((FAILED + 1))
-            cd "$ORIG_DIR"
-            continue
-        fi
+    wat_exec_output="$temp_dir/wat_exec_output.txt"
+    if ! timeout ${DBG_TEST_TIMEOUT} wasmtime "$generated_wat" --invoke main > "$wat_exec_output" 2>&1; then
+        echo "✗ (WAT execution failed)"
+        echo "      Error output:"
+        cat "$wat_exec_output" | sed 's/^/        /'
+        FAILED=$((FAILED + 1))
+        cd "$ORIG_DIR"
+        continue
     fi
     
     # All checks passed
