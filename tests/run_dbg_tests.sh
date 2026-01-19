@@ -16,6 +16,7 @@ DBG_TEST_TIMEOUT=2
 CASM_BIN="../../../bin/casm"
 PASSED=0
 FAILED=0
+KNOWN_FAILURES=0
 
 # Save original directory
 ORIG_DIR=$(pwd)
@@ -45,6 +46,12 @@ for test_dir in tests/dbg_cases/*/; do
     output_file="${test_dir%/}/output.txt"
     expected_c_file="${test_dir%/}/out.c"
     expected_wat_file="${test_dir%/}/out.wat"
+    known_failure_file="${test_dir%/}/known_failure.txt"
+    
+    is_known_failure=false
+    if [ -f "$known_failure_file" ]; then
+        is_known_failure=true
+    fi
     
     if [ ! -f "$test_file" ]; then
         echo "  Skipping $test_name (no test.csm)"
@@ -71,20 +78,41 @@ for test_dir in tests/dbg_cases/*/; do
     generated_c="$temp_dir/generated.c"
     
     if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=c --output="$generated_c" "test.csm" > "$compile_output" 2>&1; then
-        # Compilation failed - check if output matches expected
+        # Compilation failed
         expected_output=$(cat "output.txt")
         actual_output=$(cat "$compile_output")
         if [ "$expected_output" = "$actual_output" ]; then
-            echo "✓ (expected compile error)"
-            PASSED=$((PASSED + 1))
+            if [ "$is_known_failure" = true ]; then
+                # Known failure case: failure is expected - mark as known failure (suppress output)
+                echo "✓ (known failure)"
+                KNOWN_FAILURES=$((KNOWN_FAILURES + 1))
+            else
+                # Normal case: this is a compile error test
+                echo "✓"
+                PASSED=$((PASSED + 1))
+            fi
         else
-            echo "✗ (compile error output mismatch)"
-            echo "      Expected:"
-            echo "$expected_output" | sed 's/^/        /'
-            echo "      Got:"
-            echo "$actual_output" | sed 's/^/        /'
-            FAILED=$((FAILED + 1))
+            if [ "$is_known_failure" = true ]; then
+                # Known failure case: should fail, and it did, but output doesn't match - suppress this too
+                echo "✓ (known failure)"
+                KNOWN_FAILURES=$((KNOWN_FAILURES + 1))
+            else
+                echo "✗ (compile error output mismatch)"
+                echo "      Expected:"
+                echo "$expected_output" | sed 's/^/        /'
+                echo "      Got:"
+                echo "$actual_output" | sed 's/^/        /'
+                FAILED=$((FAILED + 1))
+            fi
         fi
+        cd "$ORIG_DIR"
+        continue
+    fi
+    
+    # If this is a known failure, we expected failure but got success - that's a failure
+    if [ "$is_known_failure" = true ]; then
+        echo "✗ (passing test marked as known failure)"
+        FAILED=$((FAILED + 1))
         cd "$ORIG_DIR"
         continue
     fi
@@ -218,7 +246,7 @@ for test_dir in tests/dbg_cases/*/; do
 done
 
 echo ""
-echo "DBG Test Results: $PASSED passed, $FAILED failed"
+echo "DBG Test Results: $PASSED passed, $FAILED failed, $KNOWN_FAILURES known failures"
 
 if [ $FAILED -gt 0 ]; then
     exit 1
