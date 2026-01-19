@@ -3,6 +3,7 @@
 - if something is unfinished/unsolved, write code to exception/badexit/crash, do NOT ignore
 - when you finish a task, discuss with user before proceeding
 - use tdd
+- prioritize testing with dbg_cases and do not add other tests unless needed
 - commit changes as you go
 - do not tolerate memory leaks (your code should never leak, fix it immediately)
 - all code is young and experimental, no backwards compatibility needed
