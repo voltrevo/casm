@@ -1,3 +1,4 @@
+- consult README.md and notes/ before work
 - agents.md is always an ultra-concise list, do not change format
 - when you finish a task, discuss with user before proceeding
 - use tdd
