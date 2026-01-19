@@ -216,11 +216,7 @@ void call_graph_free(CallGraph* graph) {
 
     for (int i = 0; i < graph->node_count; i++) {
         xfree(graph->nodes[i].function_name);
-        /* NOTE: Not freeing callees due to a mysterious double-free crash
-         * The callees arrays contain minimal data (just symbol IDs) and this
-         * function is only called at program exit, so the small leak is acceptable.
-         * TODO: Investigate the root cause of the heap corruption in callees free. */
-        /* xfree(graph->nodes[i].callees); */
+        xfree(graph->nodes[i].callees);
     }
     xfree(graph->nodes);
     xfree(graph);
@@ -236,7 +232,8 @@ uint32_t* call_graph_get_reachable_functions(CallGraph* graph, int* out_count) {
     uint32_t* visited = xmalloc(graph->node_count * sizeof(uint32_t));
     int visited_count = 0;
 
-    uint32_t* queue = xmalloc(graph->node_count * sizeof(uint32_t));
+    int queue_capacity = graph->node_count > 0 ? graph->node_count : 1;
+    uint32_t* queue = xmalloc(queue_capacity * sizeof(uint32_t));
     int queue_head = 0;
     int queue_tail = 0;
 
@@ -263,6 +260,10 @@ uint32_t* call_graph_get_reachable_functions(CallGraph* graph, int* out_count) {
         for (int i = 0; i < graph->node_count; i++) {
             if (graph->nodes[i].symbol_id == current_id) {
                 for (int j = 0; j < graph->nodes[i].callee_count; j++) {
+                    if (queue_tail >= queue_capacity) {
+                        queue_capacity *= 2;
+                        queue = xrealloc(queue, queue_capacity * sizeof(uint32_t));
+                    }
                     queue[queue_tail++] = graph->nodes[i].callees[j].callee_id;
                 }
                 break;

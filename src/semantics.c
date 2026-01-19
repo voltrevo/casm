@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 #include "semantics.h"
 
 /* Semantic error list operations */
@@ -48,6 +49,35 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
 static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType return_type, SemanticErrorList* errors);
 static void analyze_block(ASTBlock* block, SymbolTable* table, CasmType return_type, SemanticErrorList* errors);
 
+static int literal_fits_type(ASTExpression* expr, CasmType target) {
+    if (!expr || expr->type != EXPR_LITERAL || expr->as.literal.type != LITERAL_INT) {
+        return 0;
+    }
+
+    long long value = expr->as.literal.value.int_value;
+
+    switch (target) {
+        case TYPE_I8:
+            return value >= INT8_MIN && value <= INT8_MAX;
+        case TYPE_I16:
+            return value >= INT16_MIN && value <= INT16_MAX;
+        case TYPE_I32:
+            return value >= INT32_MIN && value <= INT32_MAX;
+        case TYPE_I64:
+            return value >= INT64_MIN && value <= INT64_MAX;
+        case TYPE_U8:
+            return value >= 0 && value <= UINT8_MAX;
+        case TYPE_U16:
+            return value >= 0 && value <= UINT16_MAX;
+        case TYPE_U32:
+            return value >= 0 && value <= UINT32_MAX;
+        case TYPE_U64:
+            return value >= 0 && value <= (long long)UINT64_MAX;
+        default:
+            return 0;
+    }
+}
+
 /* Analyze an expression and return its type */
 static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, SemanticErrorList* errors) {
     if (!expr) {
@@ -57,7 +87,7 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
     switch (expr->type) {
         case EXPR_LITERAL: {
             if (expr->as.literal.type == LITERAL_INT) {
-                expr->resolved_type = TYPE_I32;  /* Default int type is i32, not i64 */
+                expr->resolved_type = TYPE_I32;  /* Default int literal type */
             } else {
                 expr->resolved_type = TYPE_BOOL;
             }
@@ -112,7 +142,9 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
                 
                 right_type = analyze_expression(expr->as.binary_op.right, table, errors);
                 
-                if (left_type != TYPE_VOID && !types_compatible(left_type, right_type)) {
+                if (left_type != TYPE_VOID &&
+                    !types_compatible(left_type, right_type) &&
+                    !literal_fits_type(expr->as.binary_op.right, left_type)) {
                     semantic_error_list_add(errors, "Assignment type mismatch", expr->location);
                 }
                 
@@ -211,7 +243,8 @@ static CasmType analyze_expression(ASTExpression* expr, SymbolTable* table, Sema
             /* Check argument types */
             for (int i = 0; i < expr->as.function_call.argument_count && i < func->param_count; i++) {
                 CasmType arg_type = analyze_expression(&expr->as.function_call.arguments[i], table, errors);
-                if (!types_compatible(arg_type, func->param_types[i])) {
+                if (!types_compatible(arg_type, func->param_types[i]) &&
+                    !literal_fits_type(&expr->as.function_call.arguments[i], func->param_types[i])) {
                     char msg[256];
                     snprintf(msg, sizeof(msg), "Argument %d type mismatch", i + 1);
                     semantic_error_list_add(errors, msg, expr->location);
@@ -261,7 +294,8 @@ static void analyze_statement(ASTStatement* stmt, SymbolTable* table, CasmType r
             /* Analyze initializer if present */
             if (var_decl->initializer) {
                 CasmType init_type = analyze_expression(var_decl->initializer, table, errors);
-                if (!types_compatible(init_type, var_decl->type.type)) {
+                if (!types_compatible(init_type, var_decl->type.type) &&
+                    !literal_fits_type(var_decl->initializer, var_decl->type.type)) {
                     semantic_error_list_add(errors, "Initializer type mismatch", var_decl->location);
                 }
                 /* Mark variable as initialized */

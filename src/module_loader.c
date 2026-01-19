@@ -166,8 +166,8 @@ static LoadedModule* module_cache_load_internal(ModuleCache* cache,
     if (is_path_in_chain(cache, resolved_path)) {
         if (out_error) {
             char buffer[512];
-            snprintf(buffer, sizeof(buffer), 
-                     "Circular import detected: '%s'", resolved_path);
+            snprintf(buffer, sizeof(buffer),
+                     "Circular import detected: '%s'", relative_path);
             *out_error = xstrdup(buffer);
         }
         xfree(resolved_path);

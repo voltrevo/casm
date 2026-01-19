@@ -447,7 +447,9 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
 static void emit_function_declarations(FILE* out, ASTProgram* program) {
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
-        
+        if (program->import_count > 0 && !func->allocated_name) {
+            continue;
+        }
         /* Use allocated name if available (for dead code elimination in multi-module),
          * otherwise use the function's original name (for single-file programs) */
         const char* func_name = func->allocated_name ? func->allocated_name : func->name;
@@ -476,8 +478,20 @@ static void emit_function_declarations(FILE* out, ASTProgram* program) {
 
 /* Emit function definitions */
 static void emit_function_definitions(FILE* out, ASTProgram* program) {
+    int emit_total = 0;
+    for (int i = 0; i < program->function_count; i++) {
+        if (program->import_count > 0 && !program->functions[i].allocated_name) {
+            continue;
+        }
+        emit_total++;
+    }
+
+    int emit_count = 0;
     for (int i = 0; i < program->function_count; i++) {
         ASTFunctionDef* func = &program->functions[i];
+        if (program->import_count > 0 && !func->allocated_name) {
+            continue;
+        }
          
          /* Use allocated name if available (for dead code elimination in multi-module),
           * otherwise use the function's original name (for single-file programs) */
@@ -507,8 +521,9 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
         fprintf(out, ") {\n");
         emit_block(out, &func->body, 1);
         fprintf(out, "}\n");
-        
-        if (i < program->function_count - 1) {
+
+        emit_count++;
+        if (emit_count < emit_total) {
             fprintf(out, "\n");
         }
         
