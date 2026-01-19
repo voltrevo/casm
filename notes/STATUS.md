@@ -27,13 +27,12 @@ C-like to WebAssembly compiler written in C. Compiles `.csm` files to C, wasm (w
 1. **Type Narrowing**: i64 literals can implicitly narrow to smaller integer types due to default literal typing
 2. **No Explicit Casts**: Language lacks explicit cast operator for intentional narrowing
 3. **Module System Limitations**: Basic import/export, no visibility control
-4. **Call Graph Leak**: Small leak (~40 bytes) in `call_graph.c` during callees array tracking (marked TODO)
+4. **Call Graph Leak**: Resolved
 5. **No Advanced Features**: No structs, arrays, pointers, strings, floats, or bitwise ops
 
 ## Next Steps
 
 ### Immediate (In Progress)
-- Fix remaining memory leak in `call_graph.c` (40 bytes in callees array)
 - Investigate DBG test failures (compile error output mismatch)
 - Complete WAT code generation
 
