@@ -26,16 +26,10 @@ if [ ! -f "$ORIG_DIR/bin/casm" ]; then
     exit 1
 fi
 
-# Wasmtime is required for validating WAT code execution
-if ! command -v wasmtime &> /dev/null; then
-    echo "✗ wasmtime is required but not found."
-    echo "  wasmtime is needed to validate WebAssembly Text (WAT) code generation and execution."
-    echo ""
-    echo "  Installation options:"
-    echo "    1. Visit https://docs.wasmtime.dev/cli-installing.html for installation instructions"
-    echo "    2. Or run: curl https://wasmtime.dev/install.sh -sSf | bash"
-    echo ""
-    echo "  After installation, ensure 'wasmtime' is in your PATH."
+# Python wasmtime module is required for validating WAT code execution
+if ! python3 -c "import wasmtime" 2>/dev/null; then
+    echo "✗ wasmtime Python module is required but not found."
+    echo "  Install with: pip3 install wasmtime"
     exit 1
 fi
 
