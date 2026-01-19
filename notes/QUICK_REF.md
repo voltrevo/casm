@@ -11,6 +11,7 @@ make clean              # Remove binaries
 ## Code Coverage
 
 Coverage is collected automatically during `make test` when DBG tests run. The branch coverage report is printed at the end of testing.
+Requires `lcov` (for `lcov` and `genhtml`).
 
 View the detailed HTML report:
 ```bash

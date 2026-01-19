@@ -6,6 +6,7 @@ Casm is a C-like language compiler written in C. It compiles `.csm` sources to w
 
 - **Build:** `gcc` with C99 support
 - **Testing:** `wasmtime` (required for WAT code validation)
+- **Coverage reports:** `lcov` (provides `lcov` + `genhtml`)
 
 ### Installing wasmtime
 
