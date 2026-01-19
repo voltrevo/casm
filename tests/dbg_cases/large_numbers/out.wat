@@ -10,8 +10,8 @@
   (func $main (result i32) (local $max_val i32) (local $min_val i32) (local $zero i32)
     i32.const 2147483647
     local.set $max_val
-    i32.const 2147483648
     i32.const 0
+    i32.const 2147483648
     i32.sub
     local.set $min_val
     i32.const 0

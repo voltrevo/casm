@@ -8,8 +8,8 @@
   (import "host" "debug_end" (func $debug_end))
   (memory 1)
   (func $main (result i32) (local $neg i32) (local $pos i32)
-    i32.const 100
     i32.const 0
+    i32.const 100
     i32.sub
     local.set $neg
     i32.const 100

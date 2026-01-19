@@ -15,8 +15,8 @@
     i32.const 0
     i32.const 34
     call $debug_begin
-    local.get $x
     i32.const 0
+    local.get $x
     i32.sub
     call $debug_value_i32
     local.get $b

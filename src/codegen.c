@@ -367,31 +367,42 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
             /* Location info only once */
             fprintf(out, "%s:%d:%d: ", g_source_filename, dbg->location.line, dbg->location.column);
             
-            /* Build the format string with all arguments */
-            for (int i = 0; i < dbg->argument_count; i++) {
-                if (i > 0) fprintf(out, ", ");  /* Comma between arguments */
-                
-                if (dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0) {
-                    fprintf(out, "%s = ", dbg->arg_names[i]);
-                } else {
-                    fprintf(out, "arg%d = ", i);
-                }
-                
-                /* Add format specifier based on type */
-                CasmType arg_type = dbg->arguments[i].resolved_type;
-                switch (arg_type) {
-                    case TYPE_I8:
-                    case TYPE_I16:
-                    case TYPE_I32: fprintf(out, "%%d"); break;
-                    case TYPE_I64: fprintf(out, "%%lld"); break;
-                    case TYPE_U8:
-                    case TYPE_U16:
-                    case TYPE_U32: fprintf(out, "%%u"); break;
-                    case TYPE_U64: fprintf(out, "%%llu"); break;
-                    case TYPE_BOOL: fprintf(out, "%%s"); break;
-                    default: fprintf(out, "%%d"); break;
-                }
-            }
+             /* Build the format string with all arguments */
+             for (int i = 0; i < dbg->argument_count; i++) {
+                 if (i > 0) fprintf(out, ", ");  /* Comma between arguments */
+                 
+                 if (dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0) {
+                     /* Escape % characters in arg_names for the C printf format string
+                        We need double-escaping because fprintf will turn %% into %,
+                        and then the C compiler will see that % in the source code */
+                     const char* name = dbg->arg_names[i];
+                     for (int j = 0; name[j]; j++) {
+                         if (name[j] == '%') {
+                             fprintf(out, "%%%%");  /* %%%% -> %% (in source) -> % (at runtime) */
+                         } else {
+                             fprintf(out, "%c", name[j]);
+                         }
+                     }
+                     fprintf(out, " = ");
+                 } else {
+                     fprintf(out, "arg%d = ", i);
+                 }
+                 
+                 /* Add format specifier based on type */
+                 CasmType arg_type = dbg->arguments[i].resolved_type;
+                 switch (arg_type) {
+                     case TYPE_I8:
+                     case TYPE_I16:
+                     case TYPE_I32: fprintf(out, "%%d"); break;
+                     case TYPE_I64: fprintf(out, "%%lld"); break;
+                     case TYPE_U8:
+                     case TYPE_U16:
+                     case TYPE_U32: fprintf(out, "%%u"); break;
+                     case TYPE_U64: fprintf(out, "%%llu"); break;
+                     case TYPE_BOOL: fprintf(out, "%%s"); break;
+                     default: fprintf(out, "%%d"); break;
+                 }
+             }
             fprintf(out, "\\n\"");
             
             /* Add arguments to printf */

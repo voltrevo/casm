@@ -187,15 +187,19 @@ static int register_debug_format(ASTDbgStmt* dbg) {
                         g_source_filename ? g_source_filename : "unknown",
                         dbg->location.line, dbg->location.column);
     
-    /* Add argument names with % placeholders */
-    for (int i = 0; i < dbg->argument_count; i++) {
-        if (i > 0) len += snprintf(format_buf + len, sizeof(format_buf) - len, ", ");
-        
-        const char* arg_name = dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0 
-                             ? dbg->arg_names[i] 
-                             : "arg";
-        len += snprintf(format_buf + len, sizeof(format_buf) - len, "%s = %%", arg_name);
-    }
+     /* Add argument names with % placeholders */
+     for (int i = 0; i < dbg->argument_count; i++) {
+         if (i > 0) len += snprintf(format_buf + len, sizeof(format_buf) - len, ", ");
+         
+         const char* arg_name = dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0 
+                              ? dbg->arg_names[i] 
+                              : "arg";
+         len += snprintf(format_buf + len, sizeof(format_buf) - len, "%s = %%", arg_name);
+     }
+     
+     /* Calculate actual string length (snprintf with %% counts as 2 but produces 1 in output) */
+     len = strlen(format_buf);
+
     
     /* Store the format string */
     DebugFormatString* fmt = &g_debug_formats[g_debug_format_count];
@@ -240,11 +244,13 @@ static void emit_expression(FILE* out, ASTExpression* expr, int indent) {
             ASTBinaryOp* binop = &expr->as.binary_op;
             
             if (binop->op == BINOP_ASSIGN) {
-                /* Assignment: evaluate RHS, store to LHS */
+                /* Assignment: evaluate RHS, store to LHS, and leave value on stack
+                   Use local.tee instead of local.set so the assigned value remains
+                   on the stack for use in expressions like dbg(x = 5) */
                 emit_expression(out, binop->right, indent);
                 fprintf(out, "\n");
                 print_indent(out, indent);
-                fprintf(out, "local.set $%s", binop->left->as.variable.name);
+                fprintf(out, "local.tee $%s", binop->left->as.variable.name);
             } else {
                 /* Regular binary operation */
                 emit_expression(out, binop->left, indent);
@@ -260,15 +266,19 @@ static void emit_expression(FILE* out, ASTExpression* expr, int indent) {
         case EXPR_UNARY_OP: {
             ASTUnaryOp* unop = &expr->as.unary_op;
             
-            emit_expression(out, unop->operand, indent);
-            fprintf(out, "\n");
-            
             if (unop->op == UNOP_NEG) {
+                /* Negation: compute 0 - operand
+                   Push 0 first, then operand, then subtract */
                 print_indent(out, indent);
                 fprintf(out, "i32.const 0\n");
+                emit_expression(out, unop->operand, indent);
+                fprintf(out, "\n");
                 print_indent(out, indent);
                 fprintf(out, "i32.sub");
             } else if (unop->op == UNOP_NOT) {
+                /* Logical NOT */
+                emit_expression(out, unop->operand, indent);
+                fprintf(out, "\n");
                 print_indent(out, indent);
                 fprintf(out, "i32.eqz");
             }
@@ -808,13 +818,16 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output, const ch
     /* Emit function definitions (this will register debug formats as they're encountered) */
     emit_function_definitions(output, program);
     
-    /* Now emit data section with all collected format strings */
-    if (has_dbg && g_debug_format_count > 0) {
-        fprintf(output, "  (data (i32.const 0)");
-        for (int i = 0; i < g_debug_format_count; i++) {
-            fprintf(output, " \"%s\"", g_debug_formats[i].format_string);
-        }
-        fprintf(output, ")\n");
+     /* Now emit data section with all collected format strings */
+     if (has_dbg && g_debug_format_count > 0) {
+         fprintf(output, "  (data (i32.const 0)");
+         for (int i = 0; i < g_debug_format_count; i++) {
+             /* Use fputs for the string literal to avoid fprintf interpreting % chars */
+             fprintf(output, " \"");
+             fputs(g_debug_formats[i].format_string, output);
+             fprintf(output, "\"");
+         }
+         fprintf(output, ")\n");
         
         /* Export memory so host can access debug strings */
         fprintf(output, "  (export \"memory\" (memory 0))\n");

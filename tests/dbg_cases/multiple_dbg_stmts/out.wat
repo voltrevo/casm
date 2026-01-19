@@ -19,7 +19,7 @@
     local.get $x
     i32.const 5
     i32.add
-    local.set $x
+    local.tee $x
     i32.const 19
     i32.const 19
     call $debug_begin
@@ -29,7 +29,7 @@
     local.get $x
     i32.const 2
     i32.mul
-    local.set $x
+    local.tee $x
     i32.const 38
     i32.const 19
     call $debug_begin

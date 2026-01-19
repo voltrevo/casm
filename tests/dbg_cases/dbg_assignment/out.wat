@@ -16,10 +16,10 @@
     i32.const 38
     call $debug_begin
     i32.const 5
-    local.set $x
+    local.tee $x
     call $debug_value_i32
     i32.const 10
-    local.set $y
+    local.tee $y
     call $debug_value_i32
     call $debug_end
     i32.const 38

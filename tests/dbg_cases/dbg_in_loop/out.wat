@@ -26,7 +26,7 @@
       local.get $i
       i32.const 1
       i32.add
-      local.set $i
+      local.tee $i
       br $continue
     end
     end

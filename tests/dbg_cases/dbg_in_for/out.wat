@@ -11,7 +11,7 @@
     i32.const 0
     local.set $i
     i32.const 0
-    local.set $i
+    local.tee $i
     block $break
     loop $continue
       local.get $i
@@ -34,7 +34,7 @@
       local.get $i
       i32.const 1
       i32.add
-      local.set $i
+      local.tee $i
       br $continue
     end
     end
