@@ -1,5 +1,6 @@
 - consult README.md and notes/ before work
 - agents.md is always an ultra-concise list, do not change format
+- if something is unfinished/unsolved, write code to exception/badexit/crash, do NOT ignore
 - when you finish a task, discuss with user before proceeding
 - use tdd
 - commit changes as you go
