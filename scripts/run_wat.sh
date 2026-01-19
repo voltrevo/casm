@@ -18,8 +18,8 @@ fi
 
 # Get the directory containing this script
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-casm_bin="$script_dir/casm"
 project_root="$(dirname "$script_dir")"
+casm_bin="$project_root/bin/casm"
 executor_py="$project_root/tests/wat_executor.py"
 
 if [ ! -f "$casm_bin" ]; then
