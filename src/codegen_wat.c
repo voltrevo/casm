@@ -671,6 +671,91 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
     }
 }
 
+/* Recursively check if a statement or any nested statement contains a dbg() call */
+static int statement_contains_dbg(ASTStatement* stmt) {
+    if (!stmt) return 0;
+    
+    switch (stmt->type) {
+        case STMT_DBG:
+            return 1;
+        
+        case STMT_IF: {
+            ASTIfStmt* if_stmt = &stmt->as.if_stmt;
+            
+            /* Check then body */
+            for (int i = 0; i < if_stmt->then_body.statement_count; i++) {
+                if (statement_contains_dbg(&if_stmt->then_body.statements[i])) {
+                    return 1;
+                }
+            }
+            
+            /* Check else-if chain */
+            for (ASTElseIfClause* elif = if_stmt->else_if_chain; elif; elif = elif->next) {
+                for (int i = 0; i < elif->body.statement_count; i++) {
+                    if (statement_contains_dbg(&elif->body.statements[i])) {
+                        return 1;
+                    }
+                }
+            }
+            
+            /* Check else body */
+            if (if_stmt->else_body) {
+                for (int i = 0; i < if_stmt->else_body->statement_count; i++) {
+                    if (statement_contains_dbg(&if_stmt->else_body->statements[i])) {
+                        return 1;
+                    }
+                }
+            }
+            break;
+        }
+        
+        case STMT_WHILE: {
+            ASTWhileStmt* while_stmt = &stmt->as.while_stmt;
+            for (int i = 0; i < while_stmt->body.statement_count; i++) {
+                if (statement_contains_dbg(&while_stmt->body.statements[i])) {
+                    return 1;
+                }
+            }
+            break;
+        }
+        
+        case STMT_FOR: {
+            ASTForStmt* for_stmt = &stmt->as.for_stmt;
+            
+            /* Check init statement */
+            if (for_stmt->init && statement_contains_dbg(for_stmt->init)) {
+                return 1;
+            }
+            
+            /* Check loop body */
+            for (int i = 0; i < for_stmt->body.statement_count; i++) {
+                if (statement_contains_dbg(&for_stmt->body.statements[i])) {
+                    return 1;
+                }
+            }
+            break;
+        }
+        
+        case STMT_BLOCK: {
+            ASTBlockStmt* block_stmt = &stmt->as.block_stmt;
+            for (int i = 0; i < block_stmt->block.statement_count; i++) {
+                if (statement_contains_dbg(&block_stmt->block.statements[i])) {
+                    return 1;
+                }
+            }
+            break;
+        }
+        
+        case STMT_RETURN:
+        case STMT_EXPR:
+        case STMT_VAR_DECL:
+            /* These statements don't contain nested statements */
+            break;
+    }
+    
+    return 0;
+}
+
 /* Main WAT code generation function */
 CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output, const char* source_filename) {
     if (!program || !output) {
@@ -697,8 +782,9 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output, const ch
         if (program->import_count > 0 && !program->functions[i].allocated_name) {
             continue;
         }
+        /* Check all statements in function body, including nested ones */
         for (int j = 0; j < program->functions[i].body.statement_count; j++) {
-            if (program->functions[i].body.statements[j].type == STMT_DBG) {
+            if (statement_contains_dbg(&program->functions[i].body.statements[j])) {
                 has_dbg = 1;
                 break;
             }
