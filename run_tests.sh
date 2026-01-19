@@ -138,10 +138,9 @@ done
 # Run dbg tests with timeout
 echo ""
 echo "Running dbg tests (timeout: 2s per test)..."
-if timeout 30 tests/run_dbg_tests.sh > /tmp/dbg_test_output.txt 2>&1; then
+if timeout 30 tests/run_dbg_tests.sh; then
     DBG_TEST_RESULT="PASSED"
     echo "✓ DBG tests passed"
-    cat /tmp/dbg_test_output.txt
 else
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -151,7 +150,6 @@ else
         echo "✗ DBG tests failed"
         DBG_TEST_RESULT="FAILED"
     fi
-    cat /tmp/dbg_test_output.txt
 fi
 
 echo ""
