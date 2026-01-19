@@ -1,0 +1,1 @@
+Dbg should format simple comparison expressions like other dbg cases.
