@@ -21,4 +21,3 @@ make test
 - Functions, variables, and block scoping
 - Control flow: `if`/`else`, `while`, `for`
 - Full type checking with error accumulation
-- C code generation (WAT pending)
