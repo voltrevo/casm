@@ -1,0 +1,9 @@
+i32 main() {
+    i32 x = 42;
+    i32 y = x;
+    i32 z = (y);
+    dbg(x);
+    dbg(y);
+    dbg(z);
+    return 0;
+}

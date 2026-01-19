@@ -1,0 +1,8 @@
+i32 func_void() {
+    return 0;
+}
+
+i32 main() {
+    func_void();
+    return 0;
+}
