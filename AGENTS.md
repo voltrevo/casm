@@ -1,5 +1,7 @@
 - consult README.md and notes/ before work
 - agents.md is always an ultra-concise list, do not change format
+- when doing research, default to adding the docs to ./tmp
+  - if ./tmp doesn't exist, create it with .gitignore * in that dir
 - if something is unfinished/unsolved, write code to exception/badexit/crash, do NOT ignore
 - when you finish a task, discuss with user before proceeding
 - use tdd
