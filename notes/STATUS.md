@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-C-like to WebAssembly compiler written in C. Compiles `.csm` files to C output today; WAT output is the next phase.
+C-like to WebAssembly compiler written in C. Compiles `.csm` files to C, wasm (wat format).
 
 ## Current Implementation Status
 
