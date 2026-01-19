@@ -1062,11 +1062,25 @@ static void parse_block(Parser* parser, ASTBlock* out_block) {
     }
 }
 
+/* Extract the base name (without extension) from a file path.
+ * For example: "./foo.csm" -> "foo", "./dir/bar.csm" -> "bar"
+ * Returns newly allocated string that must be freed by caller. */
+static char* extract_base_name(const char* file_path) {
+    const char* slash = strrchr(file_path, '/');
+    const char* base = slash ? slash + 1 : file_path;
+    
+    const char* dot = strchr(base, '.');
+    int name_len = dot ? (int)(dot - base) : (int)strlen(base);
+    
+    return xstrndup(base, name_len);
+}
+
 /* Parse an import statement - fills in provided struct */
 static int parse_import(Parser* parser, ASTImportStatement* out_import) {
     int error_count_before = parser->errors->error_count;
     
-    /* Expect: # import name1, name2, ... from "path" ; */
+    /* Expect: # import name1, name2, ... from "path" ;
+     * OR: # import "path" ; (shorthand, expands to #import basename from "path") */
     if (!match(parser, TOK_HASH)) {
         parser_error(parser, "Expected '#' for import statement");
         return 0;
@@ -1077,15 +1091,58 @@ static int parse_import(Parser* parser, ASTImportStatement* out_import) {
         return 0;
     }
     
-    /* Parse comma-separated import names */
+    SourceLocation location = current_token(parser).location;
     char** imported_names = xmalloc(10 * sizeof(char*));
     int name_count = 0;
     int name_capacity = 10;
-    SourceLocation location = current_token(parser).location;
+    char* file_path = NULL;
     
-    while (1) {
-        if (!check(parser, TOK_IDENTIFIER)) {
-            parser_error(parser, "Expected identifier in import list");
+    /* Check for shorthand syntax: #import "path" */
+    if (check(parser, TOK_STRING)) {
+        Token path_token = current_token(parser);
+        /* Extract string content (remove quotes) */
+        const char* quoted_path = path_token.lexeme;
+        int path_len = path_token.lexeme_len;
+        if (path_len >= 2 && quoted_path[0] == '"' && quoted_path[path_len - 1] == '"') {
+            path_len -= 2;
+            quoted_path++;
+        }
+        file_path = xstrndup(quoted_path, path_len);
+        advance(parser);
+        
+        /* Extract base name from file path and use as imported name */
+        imported_names[0] = extract_base_name(file_path);
+        name_count = 1;
+    } else {
+        /* Standard syntax: #import name1, name2, ... from "path" */
+        while (1) {
+            if (!check(parser, TOK_IDENTIFIER)) {
+                parser_error(parser, "Expected identifier in import list");
+                for (int i = 0; i < name_count; i++) {
+                    xfree(imported_names[i]);
+                }
+                xfree(imported_names);
+                return 0;
+            }
+            
+            Token name_token = current_token(parser);
+            char* name = xstrndup(name_token.lexeme, name_token.lexeme_len);
+            advance(parser);
+            
+            if (name_count >= name_capacity) {
+                name_capacity *= 2;
+                imported_names = xrealloc(imported_names, name_capacity * sizeof(char*));
+            }
+            imported_names[name_count++] = name;
+            
+            /* Check for comma or move to 'from' */
+            if (!match(parser, TOK_COMMA)) {
+                break;
+            }
+        }
+        
+        if (!match(parser, TOK_FROM)) {
+            parser_error(parser, "Expected 'from' after import names");
             for (int i = 0; i < name_count; i++) {
                 xfree(imported_names[i]);
             }
@@ -1093,50 +1150,26 @@ static int parse_import(Parser* parser, ASTImportStatement* out_import) {
             return 0;
         }
         
-        Token name_token = current_token(parser);
-        char* name = xstrndup(name_token.lexeme, name_token.lexeme_len);
+        if (!check(parser, TOK_STRING)) {
+            parser_error(parser, "Expected string literal for file path");
+            for (int i = 0; i < name_count; i++) {
+                xfree(imported_names[i]);
+            }
+            xfree(imported_names);
+            return 0;
+        }
+        
+        Token path_token = current_token(parser);
+        /* Extract string content (remove quotes) */
+        const char* quoted_path = path_token.lexeme;
+        int path_len = path_token.lexeme_len;
+        if (path_len >= 2 && quoted_path[0] == '"' && quoted_path[path_len - 1] == '"') {
+            path_len -= 2;
+            quoted_path++;
+        }
+        file_path = xstrndup(quoted_path, path_len);
         advance(parser);
-        
-        if (name_count >= name_capacity) {
-            name_capacity *= 2;
-            imported_names = xrealloc(imported_names, name_capacity * sizeof(char*));
-        }
-        imported_names[name_count++] = name;
-        
-        /* Check for comma or move to 'from' */
-        if (!match(parser, TOK_COMMA)) {
-            break;
-        }
     }
-    
-    if (!match(parser, TOK_FROM)) {
-        parser_error(parser, "Expected 'from' after import names");
-        for (int i = 0; i < name_count; i++) {
-            xfree(imported_names[i]);
-        }
-        xfree(imported_names);
-        return 0;
-    }
-    
-    if (!check(parser, TOK_STRING)) {
-        parser_error(parser, "Expected string literal for file path");
-        for (int i = 0; i < name_count; i++) {
-            xfree(imported_names[i]);
-        }
-        xfree(imported_names);
-        return 0;
-    }
-    
-    Token path_token = current_token(parser);
-    /* Extract string content (remove quotes) */
-    const char* quoted_path = path_token.lexeme;
-    int path_len = path_token.lexeme_len;
-    if (path_len >= 2 && quoted_path[0] == '"' && quoted_path[path_len - 1] == '"') {
-        path_len -= 2;
-        quoted_path++;
-    }
-    char* file_path = xstrndup(quoted_path, path_len);
-    advance(parser);
     
     out_import->imported_names = imported_names;
     out_import->name_count = name_count;

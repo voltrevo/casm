@@ -1,0 +1,10 @@
+// Test mixing shorthand and regular import syntax
+#import "./math.csm"
+#import add from "./helpers.csm"
+
+i32 main() {
+    i32 a = math(5, 3);
+    i32 b = add(a, 2);
+    dbg(b);
+    return 0;
+}

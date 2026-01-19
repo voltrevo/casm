@@ -1,0 +1,4 @@
+// Math module - exported as 'math' when using shorthand #import "./math.csm"
+i32 math(i32 a, i32 b) {
+    return a + b;
+}

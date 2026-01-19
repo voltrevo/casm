@@ -1,0 +1,9 @@
+// Test shorthand import with nested directory: #import "./lib/utils.csm"
+// Should import 'utils' function (extracted from filename)
+#import "./lib/utils.csm"
+
+i32 main() {
+    i32 result = utils(10);
+    dbg(result);
+    return 0;
+}

@@ -1,0 +1,8 @@
+// Test shorthand import syntax: #import "path"
+#import "./math.csm"
+
+i32 main() {
+    i32 result = math(5, 3);
+    dbg(result);
+    return 0;
+}

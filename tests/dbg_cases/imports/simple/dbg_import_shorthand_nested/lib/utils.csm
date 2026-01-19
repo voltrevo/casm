@@ -1,0 +1,4 @@
+// Utils module - exported as 'utils' when using shorthand #import "./lib/utils.csm"
+i32 utils(i32 x) {
+    return x * 2;
+}
