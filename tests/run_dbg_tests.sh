@@ -173,9 +173,41 @@ for test_dir in tests/dbg_cases/*/; do
     fi
     
     # Step 7: WAT execution validation
-    # Note: WAT execution with debug output requires a custom executor linking host functions
-    # For now, we skip this step. WAT compilation validation (Step 6) is sufficient
-    # to catch codegen errors. Full WAT execution testing is a future enhancement.
+    wat_executor="$ORIG_DIR/tests/wat_executor.py"
+    if [ ! -f "$wat_executor" ]; then
+        echo "✗ (WAT executor not found)"
+        FAILED=$((FAILED + 1))
+        cd "$ORIG_DIR"
+        continue
+    fi
+    
+    wat_run_output="$temp_dir/wat_run_output.txt"
+    if ! timeout ${DBG_TEST_TIMEOUT} python3 "$wat_executor" "$generated_wat" > "$temp_dir/wat_stdout.txt" 2>"$temp_dir/wat_stderr.txt"; then
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -eq 124 ]; then
+            echo "✗ (WAT execution timeout)"
+            FAILED=$((FAILED + 1))
+            cd "$ORIG_DIR"
+            continue
+        fi
+        # Non-timeout exit codes are allowed (e.g., programs that return non-zero)
+    fi
+    
+    # Compare WAT execution output with expected output
+    cat "$temp_dir/wat_stdout.txt" "$temp_dir/wat_stderr.txt" > "$temp_dir/wat_actual_output.txt"
+    expected_wat_output=$(cat "output.txt")
+    actual_wat_output=$(cat "$temp_dir/wat_actual_output.txt")
+    
+    if [ "$expected_wat_output" != "$actual_wat_output" ]; then
+        echo "✗ (WAT output mismatch)"
+        echo "      Expected output:"
+        echo "$expected_wat_output" | sed 's/^/        /'
+        echo "      Got output:"
+        echo "$actual_wat_output" | sed 's/^/        /'
+        FAILED=$((FAILED + 1))
+        cd "$ORIG_DIR"
+        continue
+    fi
     
     # All checks passed
     echo "✓"
