@@ -1,0 +1,7 @@
+i32 bar() {
+    return helper();
+}
+
+i32 helper() {
+    return 5;
+}

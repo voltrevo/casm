@@ -1,0 +1,14 @@
+#import foo from "./foo.csm";
+#import bar from "./bar.csm";
+
+i32 main() {
+    dbg(foo());
+    dbg(bar());
+    dbg(foo_helper());
+
+    return 0;
+}
+
+i32 foo_helper() {
+    return 10;
+}

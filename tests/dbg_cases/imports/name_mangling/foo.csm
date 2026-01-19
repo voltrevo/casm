@@ -1,0 +1,7 @@
+i32 foo() {
+    return helper();
+}
+
+i32 helper() {
+    return 3;
+}
