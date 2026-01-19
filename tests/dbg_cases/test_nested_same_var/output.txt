@@ -1,0 +1,2 @@
+test.csm:4:8: x = 1
+test.csm:8:8: x = 2

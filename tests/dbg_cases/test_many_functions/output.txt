@@ -1,0 +1,2 @@
+test.csm:18:4: func1() = 1
+test.csm:19:4: func15() = 15

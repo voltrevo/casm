@@ -1,0 +1,11 @@
+i32 main() {
+    u32 a = 100;
+    u32 b = a;
+    u32 c = a;
+    u32 d = a;
+    dbg(a);
+    dbg(b);
+    dbg(c);
+    dbg(d);
+    return 0;
+}

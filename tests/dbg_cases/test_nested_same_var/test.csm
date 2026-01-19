@@ -1,0 +1,11 @@
+i32 main() {
+    {
+        i32 x = 1;
+        dbg(x);
+    }
+    {
+        i32 x = 2;
+        dbg(x);
+    }
+    return 0;
+}

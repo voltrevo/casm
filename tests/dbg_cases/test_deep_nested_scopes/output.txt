@@ -1,0 +1,3 @@
+test.csm:8:16: x = 1
+test.csm:9:16: y = 2
+test.csm:10:16: z = 3
