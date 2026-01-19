@@ -8,6 +8,25 @@ make test               # Build and run all tests
 make clean              # Remove binaries
 ```
 
+## Code Coverage
+
+```bash
+make coverage           # Full test suite with branch coverage report
+make coverage-dbg-only  # DBG tests only with coverage report
+```
+
+After running coverage, view the detailed report:
+```bash
+firefox coverage_report/index.html   # Or use your preferred browser
+```
+
+Coverage Summary (printed after each run):
+- Branch Coverage: % of code branches executed
+- Line Coverage: % of lines executed
+- Function Coverage: % of functions called
+
+See `coverage_report/index.html` for line-by-line coverage with branch indicators.
+
 ## Running Examples
 
 ```bash

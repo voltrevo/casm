@@ -14,10 +14,16 @@ out.wat
 # Object files
 *.o
 
+# Coverage data files
+*.gcda
+*.gcov
+*.gcno
+
 # Build artifacts
 *.a
 *.so
 *.dylib
+coverage_report
 
 # IDE and editor files
 .vscode/

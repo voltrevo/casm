@@ -1,9 +1,9 @@
-.PHONY: all clean test build build-release build-debug test help run-example
+.PHONY: all clean test build build-release build-debug test help run-example coverage coverage-dbg-only
 
 CC = gcc
 
 # Debug flags: sanitizers enabled
-CFLAGS_DEBUG = -Wall -Wextra -pedantic -std=c99 -g \
+CFLAGS_DEBUG = -Wall -Wextra -pedantic -std=c99 -g --coverage \
 	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer \
 	-I./src
 
@@ -86,4 +86,16 @@ help:
 	@echo "  test            - Run unit tests"
 	@echo "  clean           - Remove built files"
 	@echo "  run-example     - Compile and run an example"
+	@echo "  coverage        - Run full test suite with branch coverage reporting"
+	@echo "  coverage-dbg-only - Run only DBG tests with branch coverage reporting"
 	@echo "  help            - Show this help message"
+
+coverage: clean build-debug
+	@echo "Running full test suite with coverage instrumentation..."
+	./run_tests.sh
+	bash ./coverage.sh
+
+coverage-dbg-only: clean build-debug
+	@echo "Running DBG tests with coverage instrumentation..."
+	bash ./tests/run_dbg_tests.sh
+	bash ./coverage.sh
