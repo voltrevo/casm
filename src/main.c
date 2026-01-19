@@ -89,10 +89,12 @@ int main(int argc, char** argv) {
         Parser* parser = parser_create(source);
         if (parser->errors->error_count > 0) {
             error_list_print(parser->errors, source_file);
+            parser_free(parser);
             ast_program_free_merged(program);
             xfree(source);
             return 1;
         }
+        parser_free(parser);
     }
     
     /* Semantic analysis */

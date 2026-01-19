@@ -23,12 +23,14 @@ SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c 
 TEST_SOURCES = tests/test_lexer.c src/lexer.c src/utils.c
 SEMANTICS_TEST_SOURCES = tests/test_semantics.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c
 CODEGEN_TEST_SOURCES = tests/test_codegen.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/codegen.c src/codegen_wat.c src/module_loader.c src/call_graph.c src/name_allocator.c src/hashset.c
+MEMORY_LEAK_TEST_SOURCES = tests/test_memory_leaks.c src/lexer.c src/parser.c src/ast.c src/utils.c src/types.c src/semantics.c src/module_loader.c src/call_graph.c src/name_allocator.c src/hashset.c
 
 # Output
 MAIN_BINARY = $(BIN_DIR)/casm
 TEST_BINARY = $(BIN_DIR)/test_casm
 SEMANTICS_TEST_BINARY = $(BIN_DIR)/test_semantics
 CODEGEN_TEST_BINARY = $(BIN_DIR)/test_codegen
+MEMORY_LEAK_TEST_BINARY = $(BIN_DIR)/test_memory_leaks
 
 all: build
 
@@ -63,6 +65,12 @@ $(SEMANTICS_TEST_BINARY): $(BIN_DIR) $(SEMANTICS_TEST_SOURCES)
 
 $(CODEGEN_TEST_BINARY): $(BIN_DIR) $(CODEGEN_TEST_SOURCES)
 	$(CC) $(CFLAGS_DEBUG) -o $(CODEGEN_TEST_BINARY) $(CODEGEN_TEST_SOURCES) $(LDFLAGS)
+
+memory-leak-test: $(MEMORY_LEAK_TEST_BINARY)
+	./$(MEMORY_LEAK_TEST_BINARY)
+
+$(MEMORY_LEAK_TEST_BINARY): $(BIN_DIR) $(MEMORY_LEAK_TEST_SOURCES)
+	$(CC) $(CFLAGS_DEBUG) -o $(MEMORY_LEAK_TEST_BINARY) $(MEMORY_LEAK_TEST_SOURCES) $(LDFLAGS)
 
 clean:
 	rm -rf $(BIN_DIR)

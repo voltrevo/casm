@@ -42,26 +42,6 @@ void module_cache_free(ModuleCache* cache) {
     xfree(cache);
 }
 
-/* Free cache structure without freeing the ASTs (they're being reused) */
-static void module_cache_free_keep_asts(ModuleCache* cache) {
-    if (!cache) return;
-    
-    for (int i = 0; i < cache->count; i++) {
-        xfree(cache->modules[i].absolute_path);
-        xfree(cache->modules[i].source_code);
-        xfree(cache->modules[i].module_name);
-        /* Don't free the AST - we're returning it */
-    }
-    xfree(cache->modules);
-    
-    for (int i = 0; i < cache->chain_depth; i++) {
-        xfree(cache->import_chain[i]);
-    }
-    xfree(cache->import_chain);
-    
-    xfree(cache);
-}
-
 char* load_file(const char* path, char** out_error) {
     FILE* f = fopen(path, "r");
     if (!f) {
@@ -385,8 +365,9 @@ ASTProgram* build_complete_ast(const char* main_file, char** out_error) {
                 
                 /* Copy body */
                 dst_func->body = src_func->body;
-                /* Note: we're sharing the statements array, not copying it
-                 * This is okay as long as we don't modify the original AST */
+                /* Note: we're sharing the statements array from the module AST
+                 * The module ASTs remain allocated to keep bodies alive until program end
+                 * They are NOT freed here - only the cache structure is freed */
                 
                 /* Assign symbol deduplication metadata */
                 dst_func->symbol_id = g_next_symbol_id++;
@@ -397,7 +378,9 @@ ASTProgram* build_complete_ast(const char* main_file, char** out_error) {
         }
     }
     
-    module_cache_free_keep_asts(cache);
+    /* Store the cache in the complete program so it stays alive as long as the program does */
+    complete->source_cache = cache;
+    xfree(abs_main_file);
     return complete;
 }
 
@@ -405,7 +388,7 @@ ASTProgram* build_complete_ast(const char* main_file, char** out_error) {
 void ast_program_free_merged(ASTProgram* program) {
     if (!program) return;
     
-    /* Free imports */
+     /* Free imports */
     for (int i = 0; i < program->import_count; i++) {
         ast_import_free_contents(&program->imports[i]);
     }
@@ -425,6 +408,12 @@ void ast_program_free_merged(ASTProgram* program) {
         /* Don't free the body statements - they're shared from module ASTs */
     }
     xfree(program->functions);
+    
+    /* Free the source module cache if this is a merged program */
+    if (program->source_cache) {
+        module_cache_free(program->source_cache);
+        program->source_cache = NULL;
+    }
     
     xfree(program);
 }

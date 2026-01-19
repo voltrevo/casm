@@ -44,6 +44,7 @@ ASTProgram* ast_program_create(void) {
     program->import_count = 0;
     program->functions = NULL;
     program->function_count = 0;
+    program->source_cache = NULL;  /* Will be set for merged programs */
     return program;
 }
 

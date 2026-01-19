@@ -13,7 +13,7 @@ typedef struct {
 } LoadedModule;
 
 /* Module cache - tracks all loaded modules */
-typedef struct {
+typedef struct ModuleCache {
     LoadedModule* modules;
     int count;
     int capacity;

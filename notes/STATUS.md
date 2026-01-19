@@ -20,14 +20,15 @@ A C-like to WebAssembly compiler written in C. Compiles `.csm` files to C and WA
 | **Parser** | ✅ Complete | implicit | 2-pass recursive descent, AST generation |
 | **Semantic Analysis** | ✅ Complete | 15 | Type checking, symbol table, error accumulation |
 | **C Code Generator** | ✅ Complete | 7 examples | Generates valid C code |
+| **Module System** | ✅ Complete | 30 DBG | Import statements, module loading, merged AST |
+| **Memory Safety** | ✅ Complete | — | Zero leaks in module loading, ASAN/UBSAN enabled |
 | **WAT Code Generator** | ❌ Not started | — | Next phase |
-| **Memory Safety** | ✅ Complete | — | Zero leaks, ASAN/UBSAN enabled |
 
-**Total Tests:** 106 lexer + 15 semantics + 7 examples = **128 tests passing**
+**Total Tests:** 106 lexer + 15 semantics + 30 DBG module + 7 examples = **158+ tests**
 
-**Code:** 3,489 lines of C (src/ + tests/)
+**Code:** ~4,100 lines of C (src/ + tests/)
 
-**Test Runtime:** ~500ms total
+**Test Runtime:** ~500ms total (excluding DBG tests due to ASAN overhead)
 
 ## Completed Features
 
@@ -43,16 +44,25 @@ A C-like to WebAssembly compiler written in C. Compiles `.csm` files to C and WA
 10. ✅ Strict type compatibility rules
 11. ✅ C code generation (fully functional)
 12. ✅ Control flow statements (`if`/`else`, `while`, `for`)
-13. ✅ Memory safety (zero leaks)
+13. ✅ Module system with circular import detection
+14. ✅ Recursive module loading with merged AST
+15. ✅ Memory safety (zero leaks in module loading with ASAN)
+16. ✅ DBG statement parsing for debugging output
 
 ## Known Limitations
 
 1. **Type Narrowing**: i64 literals can implicitly narrow to smaller integer types due to default literal typing
 2. **No Explicit Casts**: Language lacks explicit cast operator for intentional narrowing
-3. **Single-file Compilation**: No module imports or separate compilation units yet
-4. **No Advanced Features**: No structs, arrays, pointers, strings, floats, or bitwise ops
+3. **Module System Limitations**: Basic import/export, no visibility control
+4. **Call Graph Leak**: Small leak (~40 bytes) in `call_graph.c` during callees array tracking (marked TODO)
+5. **No Advanced Features**: No structs, arrays, pointers, strings, floats, or bitwise ops
 
 ## Next Steps
+
+### Immediate (In Progress)
+- Fix remaining memory leak in `call_graph.c` (40 bytes in callees array)
+- Investigate DBG test failures (compile error output mismatch)
+- Complete WAT code generation
 
 ### Phase 1: WAT Code Generator
 - Implement `src/codegen_wat.c/h`
@@ -73,17 +83,22 @@ A C-like to WebAssembly compiler written in C. Compiles `.csm` files to C and WA
 
 **Source Code:**
 - `src/lexer.c/h` — Tokenization (350 lines)
-- `src/parser.c/h` — Syntax analysis & AST (1000+ lines)
+- `src/parser.c/h` — Syntax analysis & AST (1400+ lines)
 - `src/semantics.c/h` — Type checking & symbol table (600+ lines)
 - `src/codegen.c/h` — C code generation (280 lines)
-- `src/ast.c/h` — AST data structures (230 lines)
+- `src/ast.c/h` — AST data structures & freeing (290 lines)
 - `src/types.c/h` — Type system (230 lines)
-- `src/utils.c/h` — Utilities
-- `src/main.c` — CLI entry point (150 lines)
+- `src/module_loader.c/h` — Module loading & AST merging (440 lines)
+- `src/call_graph.c/h` — Call graph building (250 lines)
+- `src/name_allocator.c/h` — Symbol deduplication (170 lines)
+- `src/utils.c/h` — Utilities & memory management
+- `src/main.c` — CLI entry point (190 lines)
 
 **Tests:**
 - `tests/test_lexer.c` — 106 unit tests
 - `tests/test_semantics.c` — 15 semantic tests
+- `tests/test_memory_leaks.c` — 3 memory leak tests (NEW)
+- `tests/dbg_cases/` — 30+ DBG integration tests
 
 **Examples:** 13 example programs in `examples/` (7 tested, 6 issue-specific)
 

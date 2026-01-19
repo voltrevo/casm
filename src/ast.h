@@ -14,6 +14,7 @@ typedef struct ASTVarDecl ASTVarDecl;
 typedef struct ASTParameter ASTParameter;
 typedef struct ASTBlock ASTBlock;
 typedef struct ASTStatement ASTStatement;
+struct ModuleCache;  /* Forward declare as incomplete type, defined in module_loader.h */
 typedef struct ASTExpression ASTExpression;
 typedef struct ASTReturnStmt ASTReturnStmt;
 typedef struct ASTExprStmt ASTExprStmt;
@@ -273,6 +274,7 @@ struct ASTProgram {
     int import_count;
     ASTFunctionDef* functions;
     int function_count;
+    struct ModuleCache* source_cache;  /* For merged programs: keeps source module cache alive */
 };
 
 /* Constructor/destructor helpers */
