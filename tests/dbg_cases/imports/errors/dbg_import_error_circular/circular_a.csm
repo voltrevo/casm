@@ -1,5 +1,5 @@
 // File A - imports from B
-#import func_b from "./circular_b.csm";
+#import func_b from "./circular_b.csm"
 
 i32 func_a() {
     return 1;

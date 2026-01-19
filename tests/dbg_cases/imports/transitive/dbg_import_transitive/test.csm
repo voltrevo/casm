@@ -1,5 +1,5 @@
 // Test transitive imports - importing from utils which imports from base_math
-#import increment, double_value from "./utils.csm";
+#import increment, double_value from "./utils.csm"
 
 i32 main() {
     i32 x = 5;

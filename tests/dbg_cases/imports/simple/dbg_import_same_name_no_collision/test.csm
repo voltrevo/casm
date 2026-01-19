@@ -3,8 +3,8 @@
 // When compiled into a single program, both should exist as distinct symbols
 // This requires proper name mangling/namespacing (e.g., module_a_helper vs module_b_helper)
 
-#import process_a from "./module_a.csm";
-#import process_b from "./module_b.csm";
+#import process_a from "./module_a.csm"
+#import process_b from "./module_b.csm"
 
 i32 main() {
     i32 result_a = process_a(3);

@@ -1,6 +1,6 @@
 // Test importing same function name from different files
-#import add from "./math1.csm";
-#import add from "./math2.csm";
+#import add from "./math1.csm"
+#import add from "./math2.csm"
 
 i32 main() {
     return 0;

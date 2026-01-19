@@ -1138,16 +1138,6 @@ static int parse_import(Parser* parser, ASTImportStatement* out_import) {
     char* file_path = xstrndup(quoted_path, path_len);
     advance(parser);
     
-    if (!match(parser, TOK_SEMICOLON)) {
-        parser_error(parser, "Expected ';' after import statement");
-        for (int i = 0; i < name_count; i++) {
-            xfree(imported_names[i]);
-        }
-        xfree(imported_names);
-        xfree(file_path);
-        return 0;
-    }
-    
     out_import->imported_names = imported_names;
     out_import->name_count = name_count;
     out_import->file_path = file_path;
