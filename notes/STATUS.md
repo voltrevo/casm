@@ -14,7 +14,7 @@ C-like to WebAssembly compiler written in C. Compiles `.csm` files to C, wasm (w
 | **C Code Generator** | ✅ Complete | 7 examples | Generates valid C code |
 | **Module System** | ✅ Complete | 30 DBG | Import statements, module loading, merged AST |
 | **Memory Safety** | ✅ Complete | — | Zero leaks in module loading, ASAN/UBSAN enabled |
-| **WAT Code Generator** | ❌ Not started | — | Next phase |
+| **WAT Code Generator** | ✅ Complete | — | |
 
 **Total Tests:** 106 lexer + 15 semantics + 30 DBG module + 7 examples = **158+ tests**
 
