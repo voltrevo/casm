@@ -234,13 +234,10 @@ def execute_wat(wat_file):
         return 1
     
     # Now get memory after instantiation
-    try:
-        exports = instance.exports(store)
-        memory_obj = exports.get("memory")
-        if memory_obj is not None:
-            debug_state.memory = memory_obj
-    except Exception:
-        pass  # Memory is optional if there are no debug statements
+    exports = instance.exports(store)
+    memory_obj = exports.get("memory")
+    if memory_obj is not None:
+        debug_state.memory = memory_obj
     
     # Call the main function if it exists
     try:

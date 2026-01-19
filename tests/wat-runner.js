@@ -76,9 +76,10 @@ try {
             encoding: 'utf8'
         });
     } catch (e) {
-        // wasmtime might not have compile subcommand on all versions
-        // Try alternative: use wasm-tools or just skip compilation
-        // For now, try running directly with wasmtime
+        console.error('Failed to compile WAT to WASM with wasmtime.');
+        if (e.stdout) console.error(`stdout: ${e.stdout}`);
+        if (e.stderr) console.error(`stderr: ${e.stderr}`);
+        process.exit(1);
     }
     
     // Step 2: Create a C wrapper that uses wasmtime to run the module
@@ -141,10 +142,13 @@ int main(void) {
         });
     } catch (e) {
         // Program might have exited with non-zero code, which is fine
-        if (e.stdout) output = e.stdout;
-        if (e.status !== null && e.status !== 0) {
-            // Non-zero exit is expected if program returns non-zero
+        if (e.status !== null) {
             if (e.stdout) output = e.stdout;
+        } else {
+            console.error('Error executing WAT wrapper.');
+            if (e.stdout) console.error(`stdout: ${e.stdout}`);
+            if (e.stderr) console.error(`stderr: ${e.stderr}`);
+            process.exit(1);
         }
     }
     
@@ -164,6 +168,7 @@ int main(void) {
             execSync(`rm -rf "${tempDir}"`);
         }
     } catch (e) {
-        // Ignore cleanup errors
+        console.error(`Failed to clean up temp directory: ${e.message}`);
+        process.exit(1);
     }
 }
