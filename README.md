@@ -1,6 +1,6 @@
 # Casm
 
-Casm is a C-like language compiler written in C. It compiles `.csm` sources to C today, with WAT (WebAssembly text) planned next.
+Casm is a C-like language compiler written in C. It compiles `.csm` sources to wasm (wat format), and C.
 
 ## Quick Start
 
