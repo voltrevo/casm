@@ -7,14 +7,21 @@
     i32.gt_s
     if
       i32.const 0
+      i32.const 19
+      call $debug_begin
       local.get $x
-      call $__casm_dbg_i32
+      call $debug_value_i32
+      call $debug_end
     else
+      i32.const 19
+      i32.const 19
+      call $debug_begin
       i32.const 0
-      i32.const 0
-      call $__casm_dbg_i32
+      call $debug_value_i32
+      call $debug_end
     end
     i32.const 0
     return
   )
+  (export "main" (func $main))
 )

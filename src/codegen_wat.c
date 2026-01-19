@@ -7,8 +7,28 @@
 /* Global reference to the program being compiled (for function call resolution) */
 static ASTProgram* g_current_program = NULL;
 
+/* Global reference to the source filename (for debug output) */
+static const char* g_source_filename = NULL;
+
 /* Global reference to the current function being compiled (for module context in calls) */
 static ASTFunctionDef* g_current_function = NULL;
+
+/* Debug format string storage for WAT data section */
+typedef struct {
+    char* format_string;  /* The format string with % placeholders */
+    int offset;           /* Offset in data section */
+    int length;           /* Length of format string */
+    CasmType* arg_types;  /* Array of types for each % placeholder */
+    int arg_count;        /* Number of arguments */
+} DebugFormatString;
+
+/* Global array to collect debug format strings during code generation */
+static DebugFormatString* g_debug_formats = NULL;
+static int g_debug_format_count = 0;
+static int g_debug_format_capacity = 0;
+
+/* Track current data offset for packing format strings */
+static int g_data_offset = 0;
 
 /* Helper: Map CASM type to WAT type string */
 static const char* casm_type_to_wat_type(CasmType type) {
@@ -24,6 +44,22 @@ static const char* casm_type_to_wat_type(CasmType type) {
         case TYPE_BOOL:  return "i32";  /* bool is i32 in WAT (0 or 1) */
         case TYPE_VOID:  return "void";
         default:         return "void";
+    }
+}
+
+/* Helper: Get the debug value function name for a type */
+static const char* get_debug_value_func_name(CasmType type) {
+    switch (type) {
+        case TYPE_I8:
+        case TYPE_I16:
+        case TYPE_I32:   return "$debug_value_i32";
+        case TYPE_I64:   return "$debug_value_i64";
+        case TYPE_U8:
+        case TYPE_U16:
+        case TYPE_U32:   return "$debug_value_u32";
+        case TYPE_U64:   return "$debug_value_u64";
+        case TYPE_BOOL:  return "$debug_value_bool";
+        default:         return NULL;  /* Unsupported type */
     }
 }
 
@@ -136,6 +172,50 @@ static void emit_binop_instruction(FILE* out, BinaryOpType op, CasmType type) {
 /* Forward declarations */
 static void emit_expression(FILE* out, ASTExpression* expr, int indent);
 static void emit_statement(FILE* out, ASTStatement* stmt, int indent);
+
+/* Helper: Register a debug format string and return its offset */
+static int register_debug_format(ASTDbgStmt* dbg) {
+    /* Ensure we have capacity */
+    if (g_debug_format_count >= g_debug_format_capacity) {
+        g_debug_format_capacity = g_debug_format_capacity == 0 ? 10 : g_debug_format_capacity * 2;
+        g_debug_formats = xrealloc(g_debug_formats, g_debug_format_capacity * sizeof(DebugFormatString));
+    }
+    
+     /* Build format string: "file:line:col: arg1 = %, arg2 = %, ..." */
+     char format_buf[1024];
+     int len = snprintf(format_buf, sizeof(format_buf), "%s:%d:%d: ",
+                        g_source_filename ? g_source_filename : "unknown",
+                        dbg->location.line, dbg->location.column);
+    
+    /* Add argument names with % placeholders */
+    for (int i = 0; i < dbg->argument_count; i++) {
+        if (i > 0) len += snprintf(format_buf + len, sizeof(format_buf) - len, ", ");
+        
+        const char* arg_name = dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0 
+                             ? dbg->arg_names[i] 
+                             : "arg";
+        len += snprintf(format_buf + len, sizeof(format_buf) - len, "%s = %%", arg_name);
+    }
+    
+    /* Store the format string */
+    DebugFormatString* fmt = &g_debug_formats[g_debug_format_count];
+    fmt->format_string = xstrdup(format_buf);
+    fmt->length = len;
+    fmt->offset = g_data_offset;
+    fmt->arg_types = xmalloc(dbg->argument_count * sizeof(CasmType));
+    fmt->arg_count = dbg->argument_count;
+    
+    /* Copy argument types */
+    for (int i = 0; i < dbg->argument_count; i++) {
+        fmt->arg_types[i] = dbg->arguments[i].resolved_type;
+    }
+    
+    int result_offset = g_data_offset;
+    g_data_offset += len;
+    g_debug_format_count++;
+    
+    return result_offset;
+}
 
 /* Emit expression to stack - this should always result in value(s) on stack */
 static void emit_expression(FILE* out, ASTExpression* expr, int indent) {
@@ -469,21 +549,49 @@ static void emit_statement(FILE* out, ASTStatement* stmt, int indent) {
         }
         
         case STMT_DBG: {
-            /* WAT dbg support - emit debug calls */
+            /* WAT dbg support - emit begin/value/end pattern with format strings */
             ASTDbgStmt* dbg = &stmt->as.dbg_stmt;
+            
+            /* Validate all argument types are supported */
             for (int i = 0; i < dbg->argument_count; i++) {
-                /* Push label ID (we use the argument index) */
-                print_indent(out, indent);
-                fprintf(out, "i32.const %d\n", i);
+                if (!get_debug_value_func_name(dbg->arguments[i].resolved_type)) {
+                    /* Type not supported - codegen will fail */
+                    fprintf(stderr, "Error: unsupported type in dbg() statement\n");
+                    exit(1);
+                }
+            }
+            
+            /* Register format string and get its offset */
+            int format_offset = register_debug_format(dbg);
+            
+            /* Get format string length */
+            int format_len = g_debug_formats[g_debug_format_count - 1].length;
+            
+            /* Emit: debug_begin(format_ptr, format_len) */
+            print_indent(out, indent);
+            fprintf(out, "i32.const %d\n", format_offset);
+            print_indent(out, indent);
+            fprintf(out, "i32.const %d\n", format_len);
+            print_indent(out, indent);
+            fprintf(out, "call $debug_begin\n");
+            
+            /* Emit each argument with type-specific function */
+            for (int i = 0; i < dbg->argument_count; i++) {
+                CasmType arg_type = dbg->arguments[i].resolved_type;
+                const char* func_name = get_debug_value_func_name(arg_type);
                 
                 /* Emit the expression value */
                 emit_expression(out, &dbg->arguments[i], indent);
                 fprintf(out, "\n");
                 
-                /* Call the debug function with label_id and value */
+                /* Call the type-specific debug_value function */
                 print_indent(out, indent);
-                fprintf(out, "call $__casm_dbg_i32\n");
+                fprintf(out, "call %s\n", func_name);
             }
+            
+            /* Emit: debug_end() */
+            print_indent(out, indent);
+            fprintf(out, "call $debug_end\n");
             break;
         }
     }
@@ -564,7 +672,7 @@ static void emit_function_definitions(FILE* out, ASTProgram* program) {
 }
 
 /* Main WAT code generation function */
-CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
+CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output, const char* source_filename) {
     if (!program || !output) {
         CodegenWatResult result;
         result.success = 0;
@@ -572,8 +680,13 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
         return result;
     }
     
-    /* Store program reference for use in code emission */
+    /* Store program and source filename references for use in code emission */
     g_current_program = program;
+    g_source_filename = source_filename;
+    
+    /* Initialize debug format collection */
+    g_data_offset = 0;
+    g_debug_format_count = 0;
     
     /* Emit module header */
     fprintf(output, "(module\n");
@@ -593,16 +706,62 @@ CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output) {
         if (has_dbg) break;
     }
     
-    /* If there are dbg statements, define a debug function (stub for WAT execution) */
+    /* If there are dbg statements, emit host imports and memory */
     if (has_dbg) {
-        fprintf(output, "  (func $__casm_dbg_i32 (param i32 i32))\n");
+        fprintf(output, "  (import \"host\" \"debug_begin\" (func $debug_begin (param i32 i32)))\n");
+        fprintf(output, "  (import \"host\" \"debug_value_i32\" (func $debug_value_i32 (param i32)))\n");
+        fprintf(output, "  (import \"host\" \"debug_value_i64\" (func $debug_value_i64 (param i64)))\n");
+        fprintf(output, "  (import \"host\" \"debug_value_u32\" (func $debug_value_u32 (param i32)))\n");
+        fprintf(output, "  (import \"host\" \"debug_value_u64\" (func $debug_value_u64 (param i64)))\n");
+        fprintf(output, "  (import \"host\" \"debug_value_bool\" (func $debug_value_bool (param i32)))\n");
+        fprintf(output, "  (import \"host\" \"debug_end\" (func $debug_end))\n");
+        
+        fprintf(output, "  (memory 1)\n");
     }
     
-    /* Emit function definitions */
+    /* Emit function definitions (this will register debug formats as they're encountered) */
     emit_function_definitions(output, program);
+    
+    /* Now emit data section with all collected format strings */
+    if (has_dbg && g_debug_format_count > 0) {
+        fprintf(output, "  (data (i32.const 0)");
+        for (int i = 0; i < g_debug_format_count; i++) {
+            fprintf(output, " \"%s\"", g_debug_formats[i].format_string);
+        }
+        fprintf(output, ")\n");
+        
+        /* Export memory so host can access debug strings */
+        fprintf(output, "  (export \"memory\" (memory 0))\n");
+    }
+    
+    /* Export the main function if it exists */
+    for (int i = 0; i < program->function_count; i++) {
+        if (program->import_count > 0 && !program->functions[i].allocated_name) {
+            continue;
+        }
+        if (strcmp(program->functions[i].name, "main") == 0) {
+            const char* func_name = program->functions[i].allocated_name ? 
+                                   program->functions[i].allocated_name : 
+                                   program->functions[i].name;
+            char* mangled_name = mangle_function_name(func_name);
+            fprintf(output, "  (export \"main\" (func $%s))\n", mangled_name);
+            xfree(mangled_name);
+            break;
+        }
+    }
     
     /* Close module */
     fprintf(output, ")\n");
+    
+    /* Clean up debug format strings */
+    for (int i = 0; i < g_debug_format_count; i++) {
+        xfree(g_debug_formats[i].format_string);
+        xfree(g_debug_formats[i].arg_types);
+    }
+    xfree(g_debug_formats);
+    g_debug_formats = NULL;
+    g_debug_format_count = 0;
+    g_debug_format_capacity = 0;
     
     /* Clear global reference */
     g_current_program = NULL;

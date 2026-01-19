@@ -10,8 +10,11 @@
       i32.eqz
       br_if $break
       i32.const 0
+      i32.const 19
+      call $debug_begin
       local.get $i
-      call $__casm_dbg_i32
+      call $debug_value_i32
+      call $debug_end
       local.get $i
       i32.const 1
       i32.add
@@ -22,4 +25,5 @@
     i32.const 0
     return
   )
+  (export "main" (func $main))
 )

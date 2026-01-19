@@ -1,5 +1,12 @@
 (module
-  (func $__casm_dbg_i32 (param i32 i32))
+  (import "host" "debug_begin" (func $debug_begin (param i32 i32)))
+  (import "host" "debug_value_i32" (func $debug_value_i32 (param i32)))
+  (import "host" "debug_value_i64" (func $debug_value_i64 (param i64)))
+  (import "host" "debug_value_u32" (func $debug_value_u32 (param i32)))
+  (import "host" "debug_value_u64" (func $debug_value_u64 (param i64)))
+  (import "host" "debug_value_bool" (func $debug_value_bool (param i32)))
+  (import "host" "debug_end" (func $debug_end))
+  (memory 1)
   (func $module_a_helper (param $x i32) (result i32)
     local.get $x
     i32.const 10
@@ -34,12 +41,21 @@
     call $process_b
     local.set $result_b
     i32.const 0
+    i32.const 27
+    call $debug_begin
     local.get $result_a
-    call $__casm_dbg_i32
-    i32.const 0
+    call $debug_value_i32
+    call $debug_end
+    i32.const 27
+    i32.const 27
+    call $debug_begin
     local.get $result_b
-    call $__casm_dbg_i32
+    call $debug_value_i32
+    call $debug_end
     i32.const 0
     return
   )
+  (data (i32.const 0) "test.csm:12:4: result_a = %" "test.csm:13:4: result_b = %")
+  (export "memory" (memory 0))
+  (export "main" (func $main))
 )

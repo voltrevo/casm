@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         
-        CodegenWatResult result = codegen_wat_program(program, out);
+        CodegenWatResult result = codegen_wat_program(program, out, source_file);
         fclose(out);
         
         if (!result.success) {

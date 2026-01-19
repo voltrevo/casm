@@ -11,7 +11,8 @@ typedef struct {
     char* error_msg;    /* Error message if failed (NULL if success) */
 } CodegenWatResult;
 
-/* Generate WebAssembly text format from AST and write to file */
-CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output);
+/* Generate WebAssembly text format from AST and write to file.
+ * source_filename is used in debug output (typically the .csm filename). */
+CodegenWatResult codegen_wat_program(ASTProgram* program, FILE* output, const char* source_filename);
 
 #endif /* CODEGEN_WAT_H */
