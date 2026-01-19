@@ -28,7 +28,8 @@ C-like to WebAssembly compiler written in C. Compiles `.csm` files to C, wasm (w
 2. **No Explicit Casts**: Language lacks explicit cast operator for intentional narrowing
 3. **Module System Limitations**: Basic import/export, no visibility control
 4. **Call Graph Leak**: Resolved
-5. **No Advanced Features**: No structs, arrays, pointers, strings, floats, or bitwise ops
+5. **DBG Known Failures**: `tests/dbg_cases/**/known_failure.txt` marks dbg cases expected to fail; they fail the suite if they pass
+6. **No Advanced Features**: No structs, arrays, pointers, strings, floats, or bitwise ops
 
 ## Next Steps
 
