@@ -250,10 +250,8 @@ echo "=========================================="
 
 COVERAGE_DIR="$ORIG_DIR/coverage_report"
 COVERAGE_INFO="$COVERAGE_DIR/coverage.info"
+rm -rf "$COVERAGE_DIR"
 mkdir -p "$COVERAGE_DIR"
-
-# Remove old coverage info file
-rm -f "$COVERAGE_INFO" 2>/dev/null || true
 
 # Collect coverage data from .gcda files
 echo "Collecting branch coverage metrics..."
