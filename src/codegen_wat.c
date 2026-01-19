@@ -187,15 +187,29 @@ static int register_debug_format(ASTDbgStmt* dbg) {
                         g_source_filename ? g_source_filename : "unknown",
                         dbg->location.line, dbg->location.column);
     
-     /* Add argument names with % placeholders */
-     for (int i = 0; i < dbg->argument_count; i++) {
-         if (i > 0) len += snprintf(format_buf + len, sizeof(format_buf) - len, ", ");
-         
-         const char* arg_name = dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0 
-                              ? dbg->arg_names[i] 
-                              : "arg";
-         len += snprintf(format_buf + len, sizeof(format_buf) - len, "%s = %%", arg_name);
-     }
+     /* Add argument names with % placeholders
+         Note: We need to escape any % in arg_name by doubling it (%% in WAT format string)
+         to distinguish them from the % placeholder */
+      for (int i = 0; i < dbg->argument_count; i++) {
+          if (i > 0) len += snprintf(format_buf + len, sizeof(format_buf) - len, ", ");
+          
+          const char* arg_name = dbg->arg_names[i] && strlen(dbg->arg_names[i]) > 0 
+                               ? dbg->arg_names[i] 
+                               : "arg";
+          
+          /* Copy arg_name to format_buf, escaping any % characters */
+          for (const char* p = arg_name; *p; p++) {
+              if (*p == '%') {
+                  format_buf[len++] = '%';
+                  format_buf[len++] = '%';
+              } else {
+                  format_buf[len++] = *p;
+              }
+          }
+          
+          /* Add the " = %%" suffix (where %% is the placeholder) */
+          len += snprintf(format_buf + len, sizeof(format_buf) - len, " = %%");
+      }
      
      /* Calculate actual string length (snprintf with %% counts as 2 but produces 1 in output) */
      len = strlen(format_buf);

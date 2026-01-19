@@ -13,7 +13,7 @@
     i32.const 5
     local.set $b
     i32.const 0
-    i32.const 51
+    i32.const 54
     call $debug_begin
     local.get $a
     local.get $b
@@ -31,7 +31,7 @@
     i32.const 0
     return
   )
-  (data (i32.const 0) "test.csm:5:4: expr(%) = %, expr(%) = %, expr(%) = %")
+  (data (i32.const 0) "test.csm:5:4: expr(%%) = %, expr(%%) = %, expr(%%) = %")
   (export "memory" (memory 0))
   (export "main" (func $main))
 )

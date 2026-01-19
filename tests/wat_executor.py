@@ -65,7 +65,20 @@ class DebugState:
             return ""
         
         # Count the number of % placeholders in the pattern
-        placeholder_count = self.pattern.count('%')
+        # %% is an escaped %, so we need to count only single % chars
+        placeholder_count = 0
+        i = 0
+        while i < len(self.pattern):
+            if self.pattern[i] == '%':
+                if i + 1 < len(self.pattern) and self.pattern[i + 1] == '%':
+                    # %% is an escaped %, skip both characters
+                    i += 2
+                else:
+                    # Single % is a placeholder
+                    placeholder_count += 1
+                    i += 1
+            else:
+                i += 1
         
         # Validate that we have the right number of values
         if len(self.values) != placeholder_count:
@@ -73,16 +86,30 @@ class DebugState:
                   file=sys.stderr)
             sys.exit(1)
         
-        # Format the output by replacing each % with the corresponding value
-        output = self.pattern
-        for value, type_hint in self.values:
-            if type_hint == 'bool':
-                formatted = "true" if value else "false"
+        # Format the output by replacing each % (that's not %%) with the corresponding value
+        output = ""
+        value_idx = 0
+        i = 0
+        while i < len(self.pattern):
+            if self.pattern[i] == '%':
+                if i + 1 < len(self.pattern) and self.pattern[i + 1] == '%':
+                    # %% becomes a single %
+                    output += '%'
+                    i += 2
+                else:
+                    # Single % is a placeholder to be replaced
+                    if value_idx < len(self.values):
+                        value, type_hint = self.values[value_idx]
+                        if type_hint == 'bool':
+                            formatted = "true" if value else "false"
+                        else:
+                            formatted = str(value)
+                        output += formatted
+                        value_idx += 1
+                    i += 1
             else:
-                formatted = str(value)
-            
-            # Replace the first occurrence of %
-            output = output.replace('%', formatted, 1)
+                output += self.pattern[i]
+                i += 1
         
         # Add newline and return
         self.output = output + "\n"
