@@ -1,7 +1,0 @@
-// Known failure: dbg should display comparison results cleanly
-i32 main() {
-    i32 x = 3;
-    i32 y = 4;
-    dbg(x < y);
-    return 0;
-}

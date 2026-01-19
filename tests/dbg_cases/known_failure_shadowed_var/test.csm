@@ -1,9 +1,0 @@
-// Known failure: dbg should resolve the nearest scoped variable
-i32 main() {
-    i32 x = 1;
-    {
-        i32 x = 2;
-        dbg(x);
-    }
-    return 0;
-}

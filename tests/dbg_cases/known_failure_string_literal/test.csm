@@ -1,0 +1,5 @@
+// Known failure: dbg should support string literals
+i32 main() {
+    dbg("hello");
+    return 0;
+}

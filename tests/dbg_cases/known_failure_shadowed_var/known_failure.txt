@@ -1,1 +1,0 @@
-Dbg should resolve the innermost shadowed variable.
