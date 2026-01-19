@@ -76,6 +76,9 @@ for test_dir in tests/dbg_cases/*/; do
     # Step 1: Compile .csm to C from within test directory
     compile_output="$temp_dir/compile_output.txt"
     generated_c="$temp_dir/generated.c"
+    test_failed=0
+    fail_reason=""
+    compile_handled=0
     
     if ! timeout ${DBG_TEST_TIMEOUT} "$CASM_BIN" --target=c --output="$generated_c" "test.csm" > "$compile_output" 2>&1; then
         # Compilation failed
@@ -105,8 +108,7 @@ for test_dir in tests/dbg_cases/*/; do
                 FAILED=$((FAILED + 1))
             fi
         fi
-        cd "$ORIG_DIR"
-        continue
+        compile_handled=1
     fi
     
     # If this is a known failure, we expected failure but got success - that's a failure
@@ -118,7 +120,7 @@ for test_dir in tests/dbg_cases/*/; do
     fi
     
     # Step 2: Validate generated C code matches expected
-    if [ -f "out.c" ]; then
+    if [ $compile_handled -eq 0 ] && [ $test_failed -eq 0 ] && [ -f "out.c" ]; then
         expected_c=$(cat "out.c")
         actual_c=$(cat "$generated_c")
         if [ "$expected_c" != "$actual_c" ]; then
@@ -146,15 +148,15 @@ for test_dir in tests/dbg_cases/*/; do
     fi
     
     # Step 4: Run the executable and capture output
-    if ! timeout ${DBG_TEST_TIMEOUT} "$executable" > "$temp_dir/run_stdout.txt" 2>"$temp_dir/run_stderr.txt"; then
-        EXIT_CODE=$?
-        if [ $EXIT_CODE -eq 124 ]; then
-            echo "✗ (execution timeout)"
-            FAILED=$((FAILED + 1))
-            cd "$ORIG_DIR"
-            continue
+    if [ $compile_handled -eq 0 ] && [ $test_failed -eq 0 ]; then
+        if ! timeout ${DBG_TEST_TIMEOUT} "$executable" > "$temp_dir/run_stdout.txt" 2>"$temp_dir/run_stderr.txt"; then
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 124 ]; then
+                test_failed=1
+                fail_reason="execution timeout"
+            fi
+            # Non-timeout exit codes are allowed (e.g., programs that return non-zero)
         fi
-        # Non-timeout exit codes are allowed (e.g., programs that return non-zero)
     fi
     
     # Step 5: Compare program output (stdout + stderr combined, in that order)
@@ -185,7 +187,7 @@ for test_dir in tests/dbg_cases/*/; do
         continue
     fi
     
-    if [ -f "out.wat" ]; then
+    if [ $compile_handled -eq 0 ] && [ $test_failed -eq 0 ] && [ -f "out.wat" ]; then
         expected_wat=$(cat "out.wat")
         actual_wat=$(cat "$generated_wat")
         if [ "$expected_wat" != "$actual_wat" ]; then
@@ -238,8 +240,30 @@ for test_dir in tests/dbg_cases/*/; do
     fi
     
     # All checks passed
-    echo "✓"
-    PASSED=$((PASSED + 1))
+    if [ $known_failure -eq 1 ]; then
+        if [ $test_failed -eq 0 ]; then
+            echo "✗ (known failure passed)"
+            FAILED=$((FAILED + 1))
+        else
+            if [ -z "$fail_reason" ]; then
+                fail_reason="failed as expected"
+            fi
+            echo "⚠️ (known failure: $fail_reason)"
+            XFAILED=$((XFAILED + 1))
+        fi
+    else
+        if [ $test_failed -eq 0 ]; then
+            if [ $compile_handled -eq 1 ]; then
+                echo "✓ (expected compile error)"
+            else
+                echo "✓"
+            fi
+            PASSED=$((PASSED + 1))
+        else
+            echo "✗ ($fail_reason)"
+            FAILED=$((FAILED + 1))
+        fi
+    fi
     
     # Return to original directory
     cd "$ORIG_DIR"

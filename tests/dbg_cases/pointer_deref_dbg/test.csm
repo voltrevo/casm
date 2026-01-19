@@ -1,0 +1,7 @@
+// Known failure: dbg should support pointers and dereference
+i32 main() {
+    i32 value = 42;
+    i32* ptr = &value;
+    dbg(*ptr);
+    return 0;
+}
