@@ -259,38 +259,3 @@ const char* name_allocator_get_name(NameAllocator* allocator, uint32_t symbol_id
 
     return NULL;
 }
-
-/* Debug: print allocation results */
-void name_allocator_print(NameAllocator* allocator) {
-    if (!allocator) {
-        printf("Name allocator is NULL\n");
-        return;
-    }
-
-    printf("=== Name Allocation Results ===\n\n");
-
-    printf("Reachable functions (allocated names):\n");
-    for (int i = 0; i < allocator->allocation_count; i++) {
-        AllocationRecord* record = &allocator->allocations[i];
-        if (record->is_reachable && record->allocated_name) {
-            printf("  ID %u: %s -> %s (from %s)\n",
-                   record->symbol_id,
-                   record->original_name,
-                   record->allocated_name,
-                   record->module_path);
-        }
-    }
-
-    printf("\nDead code (no allocated name):\n");
-    for (int i = 0; i < allocator->allocation_count; i++) {
-        AllocationRecord* record = &allocator->allocations[i];
-        if (!record->is_reachable || !record->allocated_name) {
-            printf("  ID %u: %s (from %s)\n",
-                   record->symbol_id,
-                   record->original_name,
-                   record->module_path);
-        }
-    }
-
-    printf("\n");
-}

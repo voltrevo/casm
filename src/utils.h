@@ -20,9 +20,4 @@ typedef struct {
     int offset;
 } SourceLocation;
 
-void error(const char* message);
-void error_at(SourceLocation loc, const char* message);
-void warning(const char* message);
-void warning_at(SourceLocation loc, const char* message);
-
 #endif /* UTILS_H */
