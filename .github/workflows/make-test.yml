@@ -13,13 +13,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up build tools
-        run: sudo apt-get update && sudo apt-get install -y build-essential
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3 python3-pip
 
-      - name: Install wasmtime
+      - name: Install wasmtime CLI
         run: curl https://wasmtime.dev/install.sh -sSf | bash
 
       - name: Add wasmtime to PATH
         run: echo "$HOME/.wasmtime/bin" >> $GITHUB_PATH
+
+      - name: Install Python wasmtime module
+        run: pip3 install wasmtime
 
       - name: Run tests
         run: make test
