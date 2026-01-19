@@ -33,7 +33,7 @@ class DebugState:
         if self.memory is None:
             raise RuntimeError("Memory not available for debug_begin")
         
-        mem_data = self.memory.read(self.store, pattern_ptr, pattern_len)
+        mem_data = self.memory.read(self.store, pattern_ptr, pattern_ptr + pattern_len)
         self.pattern = bytes(mem_data).decode('utf-8')
         self.pattern_len = pattern_len
         self.values = []
