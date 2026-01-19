@@ -1,7 +1,6 @@
 #include "call_graph.h"
 #include "utils.h"
 #include <string.h>
-#include <stdio.h>
 
 /* Helper: Add a callee to a node's call list (avoid duplicates) */
 static void add_callee(CallGraphNode* node, uint32_t callee_id) {
@@ -274,63 +273,4 @@ uint32_t* call_graph_get_reachable_functions(CallGraph* graph, int* out_count) {
     xfree(queue);
     *out_count = visited_count;
     return visited;
-}
-
-uint32_t* call_graph_get_callers(CallGraph* graph, uint32_t callee_id, int* out_count) {
-    uint32_t* callers = xmalloc(graph->node_count * sizeof(uint32_t));
-    int caller_count = 0;
-
-    for (int i = 0; i < graph->node_count; i++) {
-        for (int j = 0; j < graph->nodes[i].callee_count; j++) {
-            if (graph->nodes[i].callees[j].callee_id == callee_id) {
-                /* Check if already in list */
-                int already_added = 0;
-                for (int k = 0; k < caller_count; k++) {
-                    if (callers[k] == graph->nodes[i].symbol_id) {
-                        already_added = 1;
-                        break;
-                    }
-                }
-                if (!already_added) {
-                    callers[caller_count++] = graph->nodes[i].symbol_id;
-                }
-                break;
-            }
-        }
-    }
-
-    if (caller_count == 0) {
-        xfree(callers);
-        *out_count = 0;
-        return NULL;
-    }
-
-    *out_count = caller_count;
-    return callers;
-}
-
-void call_graph_print(CallGraph* graph) {
-    if (!graph) {
-        printf("Call graph is NULL\n");
-        return;
-    }
-
-    printf("=== Call Graph ===\n");
-    printf("Entry point ID: %u\n\n", graph->entry_point_id);
-
-    for (int i = 0; i < graph->node_count; i++) {
-        CallGraphNode* node = &graph->nodes[i];
-        printf("Function: %s (ID: %u)%s\n", node->function_name, node->symbol_id,
-               node->is_entry_point ? " [ENTRY POINT]" : "");
-
-        if (node->callee_count > 0) {
-            printf("  Calls:\n");
-            for (int j = 0; j < node->callee_count; j++) {
-                printf("    -> ID %u\n", node->callees[j].callee_id);
-            }
-        } else {
-            printf("  (no calls)\n");
-        }
-        printf("\n");
-    }
 }

@@ -45,11 +45,4 @@ void call_graph_free(CallGraph* graph);
  * Caller must free the returned array */
 uint32_t* call_graph_get_reachable_functions(CallGraph* graph, int* out_count);
 
-/* Find all functions that call a given function
- * Used for reverse lookup during name allocation */
-uint32_t* call_graph_get_callers(CallGraph* graph, uint32_t callee_id, int* out_count);
-
-/* Debug: print call graph structure */
-void call_graph_print(CallGraph* graph);
-
 #endif /* CALL_GRAPH_H */

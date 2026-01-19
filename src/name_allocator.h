@@ -24,7 +24,4 @@ void name_allocator_apply(NameAllocator* allocator, ASTProgram* program);
  * Returns NULL if not allocated or not found */
 const char* name_allocator_get_name(NameAllocator* allocator, uint32_t symbol_id);
 
-/* Debug: print allocation results */
-void name_allocator_print(NameAllocator* allocator);
-
 #endif /* NAME_ALLOCATOR_H */

@@ -42,22 +42,3 @@ char* xstrndup(const char* str, size_t n) {
     dup[n] = '\0';
     return dup;
 }
-
-/* Error reporting */
-void error(const char* message) {
-    fprintf(stderr, "Error: %s\n", message);
-    exit(1);
-}
-
-void error_at(SourceLocation loc, const char* message) {
-    fprintf(stderr, "Error at line %d, column %d: %s\n", loc.line, loc.column, message);
-    exit(1);
-}
-
-void warning(const char* message) {
-    fprintf(stderr, "Warning: %s\n", message);
-}
-
-void warning_at(SourceLocation loc, const char* message) {
-    fprintf(stderr, "Warning at line %d, column %d: %s\n", loc.line, loc.column, message);
-}
